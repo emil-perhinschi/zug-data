@@ -1,0 +1,14 @@
+.dub
+docs.json
+__dummy.html
+docs/
+zug-matrix.so
+zug-matrix.dylib
+zug-matrix.dll
+zug-matrix.a
+zug-matrix.lib
+zug-matrix-test-*
+*.exe
+*.o
+*.obj
+*.lst

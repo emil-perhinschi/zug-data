@@ -1,0 +1,9 @@
+{
+	"name": "zug-matrix",
+	"authors": [
+		"Emil Nicolaie Perhinschi"
+	],
+	"description": "manipulate 2d matrices useful for generating random heightmaps, not useful for math",
+	"copyright": "Copyright © 2018, Emil Nicolaie Perhinschi",
+	"license": "proprietary"
+}
