@@ -2,6 +2,6 @@
 
 manipulate 2d matrices
 
-useful for generating random heightmaps, 
+useful for generating random heightmaps
 
 not useful for math
