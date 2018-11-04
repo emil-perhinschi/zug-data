@@ -8,6 +8,7 @@ zug-matrix.dll
 zug-matrix.a
 zug-matrix.lib
 zug-matrix-test-*
+zug-matrix
 *.exe
 *.o
 *.obj
