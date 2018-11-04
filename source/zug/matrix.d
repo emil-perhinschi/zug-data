@@ -99,28 +99,97 @@ int normalize_value(T)(T item, T actual_min_value, T actual_max_value, T normal_
             actual_max_value - actual_min_value)).to!int;
 }
 
+T[] slice2d(T)(T[] original, size_t width, size_t start_x, size_t start_y, size_t size_x, size_t size_y) 
+if (isNumeric!T)
+{
+    import std.range: chunks;
+    import std.stdio;
+
+    auto chunked = original.chunks(width);
+    
+    T[] result;
+
+    foreach (T[] row; chunked[start_y..(start_y + size_y)]) {
+        auto selected = row[start_x..(start_x + size_x)].dup;
+
+        result ~= selected;
+    }
+
+    return result.dup;
+}
+
+void dbg(T)(T[] data, size_t width) {
+    import std.range: chunks;
+    import std.stdio: writeln;
+
+    auto chunked = data.chunks(width);
+    foreach (T[] row; chunked) {
+        writeln("#", row);
+    }
+}
+
+unittest {
+    import std.stdio: writeln;
+
+    int[] data = [
+        0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+        0,1,1,1,1,0,0,0,0,0,0,0,0,1,1,1,1,0,
+        0,1,0,0,1,0,0,0,1,1,0,0,0,1,0,0,1,0,
+        0,1,0,0,1,0,0,0,0,0,0,0,0,1,0,0,1,0,
+        0,1,1,1,1,0,0,0,0,0,0,0,0,1,1,1,1,0,
+        0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+        0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,
+        0,1,1,1,1,0,0,0,0,0,0,0,0,1,1,1,1,0,
+        0,1,0,0,1,0,0,0,1,1,0,0,0,1,0,0,1,0,
+        0,1,0,0,1,0,0,0,0,0,0,0,0,1,0,0,1,0,
+        0,1,1,1,1,0,0,0,0,0,0,0,0,1,1,1,1,0,
+        0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+        0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,
+        0,1,1,1,1,0,0,0,0,0,0,0,0,1,1,1,1,0,
+        0,1,0,0,1,0,0,0,0,0,0,0,0,1,0,0,1,0,
+        0,1,0,0,1,0,0,0,0,0,0,0,0,1,0,0,1,0,
+        0,1,1,1,1,0,0,0,1,1,0,0,0,1,1,1,1,0,
+        0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+    ];
+    size_t width = 18;
+    auto result = slice2d!int(data, width, 1, 1, 4, 4);
+    debug dbg(result, 4);
+    assert(result[0] == 1);
+    assert(result[5] == 0);
+
+}
+
+
+T[] random_array(T)(size_t size, T min, T max, ulong seed ) 
+if (isNumeric!T)
+{
+    import std.random: Random, uniform;
+    
+    auto rnd = Random(42);
+    T[]result = new T[](size);
+    foreach(size_t i; 0..size) {
+        result[i] = uniform(min, max, rnd);
+    }
+    return result;
+}
+
+unittest {
+    import std.range: take;
+    import std.random: Random, uniform;
+    import std.stdio: writeln;
+
+    auto result = random_array!int(10, 0, 15, 12341234);
+    
+    assert(result[0] == 12);
+    assert(result[1] == 2);
+
+    auto result_float = random_array!float(10, 0, 15, 12341234);
+    // TODO figure out how to check floats, this does not work
+    // writeln(result_float);
+    // assert(result_float[0] == 5.6181 ); 
+}
+
 /*
-
-export function slice2d(original, start_x, end_x, start_y, end_y) {
-
-    if (start_x >= end_x)
-        throw new Error("start_x should be smaller than end_x")
-    if (start_y >= end_y)
-        throw new Error("start_y should be smaller than end_y")
-
-    return Array.from(
-        original.slice(start_y, end_y),
-        (row) => row.slice(start_x, end_x)
-    )
-}
-
-
-export function random_array(width, callback = (i) => i) {
-    return Array.from(
-        Array(width),
-        (v, x) => callback( Math.round( Math.random() ) )
-    )
-}
 
 // fill : (x,y) => do_something_based_on_x_and_y_or_just_return_a_value()
 // allow_cropping: permit the original to be placed partially outside the new
@@ -421,6 +490,10 @@ export function moving_average(matrix, distance) {
     )
 }
 
+*/
+
+/*
+/// TODO: is this needed ? already have std.algorithm.iteration: sum 
 export function sum_elements(matrix) {
     let result = 0
     matrix.forEach(
@@ -443,7 +516,9 @@ export function sum_elements(matrix) {
     )
     return result
 }
+*/
 
+/*
 export function replace_elements(
     matrix,
     filter = (i) => i < 0,
