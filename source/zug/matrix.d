@@ -1,66 +1,71 @@
 module zug.matrix;
 
 import std.array;
-import std.algorithm: map;
+import std.algorithm : map;
 import std.traits;
 
 /++
 matrices are stored in plain arrays; this might change 
 +/
 
-T[] add_matrices(T)(T[] first, T[] second)
-if ( isNumeric!T ) {
+T[] add_matrices(T)(T[] first, T[] second) if (isNumeric!T)
+{
 
-    if (first.length != second.length) {
+    if (first.length != second.length)
+    {
         throw new Error("the matrices don't have the same size");
     }
 
     auto result = new T[](first.length);
-    foreach (size_t i; 0 .. first.length ) {
+    foreach (size_t i; 0 .. first.length)
+    {
         result[i] = first[i] + second[i];
     }
     return result;
 }
 
-unittest {
+unittest
+{
     import std.stdio;
 
-    double[4] first  = [1, 2, 3, 4];
+    double[4] first = [1, 2, 3, 4];
     double[4] second = [0, 2, 4, 6];
-    
+
     auto result = add_matrices!double(first, second);
-    assert(result[0] ==  1);
-    assert(result[1] ==  4);
-    assert(result[2] ==  7);
+    assert(result[0] == 1);
+    assert(result[1] == 4);
+    assert(result[2] == 7);
     assert(result[3] == 10);
 }
 
-
-int[] normalize_matrix(T)( T[] orig, T normal_min, T normal_max )
-if ( isNumeric!T ) {
+int[] normalize_matrix(T)(T[] orig, T normal_min, T normal_max) if (isNumeric!T)
+{
     import std.array;
     import std.algorithm;
 
     auto min = orig.minElement;
     auto max = orig.maxElement;
 
-    return map!( (T value) => normalize_value!T(value, min, max, normal_min, normal_max) )(orig[0..$]).array;
+    return map!((T value) => normalize_value!T(value, min, max, normal_min, normal_max))(
+            orig[0 .. $]).array;
 }
 
-unittest {
+unittest
+{
     import std.stdio : writeln;
 
     float[] orig = [1.1, 100.1, 50.1];
     float normal_min = 0.0;
     float normal_max = 16.0;
     int[] result = normalize_matrix!float(orig, normal_min, normal_max);
-    
-    assert(result[0] ==  0      );
-    assert(result[1] == 16      );
+
+    assert(result[0] == 0);
+    assert(result[1] == 16);
     // assert(result[2] ==  7.91919); // this fails for some reason , probably float weiredness ? TODO: investigate further
 }
 
-unittest {
+unittest
+{
     import std.stdio : writeln;
 
     double[] orig = [0, 255, 125];
@@ -68,9 +73,9 @@ unittest {
     double normal_max = 16;
     int[] result = normalize_matrix!double(orig, normal_min, normal_max);
 
-    assert(result[0] ==  0);
+    assert(result[0] == 0);
     assert(result[1] == 16);
-    assert(result[2] ==  7);
+    assert(result[2] == 7);
 }
 
 /++
@@ -79,16 +84,19 @@ http://mathforum.org/library/drmath/view/60433.html
 1 + (x-A)*(10-1)/(B-A)
 
 +/
-int normalize_value(T)( T item, T actual_min_value, T actual_max_value, T normal_min, T normal_max) 
-if (isNumeric!T) {
+int normalize_value(T)(T item, T actual_min_value, T actual_max_value, T normal_min, T normal_max)
+        if (isNumeric!T)
+{
     import std.math;
-    import std.conv: to;
+    import std.conv : to;
 
-    if ( normal_min == normal_max ) {
+    if (normal_min == normal_max)
+    {
         throw new Error("the normal min and max values are equal");
     }
 
-    return (normal_min + (item - actual_min_value) * (normal_max - normal_min) / (actual_max_value - actual_min_value)).to!int;
+    return (normal_min + (item - actual_min_value) * (normal_max - normal_min) / (
+            actual_max_value - actual_min_value)).to!int;
 }
 
 /*
