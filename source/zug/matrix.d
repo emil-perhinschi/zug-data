@@ -99,18 +99,19 @@ int normalize_value(T)(T item, T actual_min_value, T actual_max_value, T normal_
             actual_max_value - actual_min_value)).to!int;
 }
 
-T[] slice2d(T)(T[] original, size_t width, size_t start_x, size_t start_y, size_t size_x, size_t size_y) 
-if (isNumeric!T)
+T[] slice2d(T)(T[] original, size_t width, size_t start_x, size_t start_y,
+        size_t size_x, size_t size_y) if (isNumeric!T)
 {
-    import std.range: chunks;
+    import std.range : chunks;
     import std.stdio;
 
     auto chunked = original.chunks(width);
-    
+
     T[] result;
 
-    foreach (T[] row; chunked[start_y..(start_y + size_y)]) {
-        auto selected = row[start_x..(start_x + size_x)].dup;
+    foreach (T[] row; chunked[start_y .. (start_y + size_y)])
+    {
+        auto selected = row[start_x .. (start_x + size_x)].dup;
 
         result ~= selected;
     }
@@ -118,39 +119,36 @@ if (isNumeric!T)
     return result.dup;
 }
 
-void dbg(T)(T[] data, size_t width) {
-    import std.range: chunks;
-    import std.stdio: writeln;
+void dbg(T)(T[] data, size_t width)
+{
+    import std.range : chunks;
+    import std.stdio : writeln;
 
     auto chunked = data.chunks(width);
-    foreach (T[] row; chunked) {
+    foreach (T[] row; chunked)
+    {
         writeln("#", row);
     }
 }
 
-unittest {
-    import std.stdio: writeln;
+unittest
+{
+    import std.stdio : writeln;
 
-    int[] data = [
-        0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-        0,1,1,1,1,0,0,0,0,0,0,0,0,1,1,1,1,0,
-        0,1,0,0,1,0,0,0,1,1,0,0,0,1,0,0,1,0,
-        0,1,0,0,1,0,0,0,0,0,0,0,0,1,0,0,1,0,
-        0,1,1,1,1,0,0,0,0,0,0,0,0,1,1,1,1,0,
-        0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-        0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,
-        0,1,1,1,1,0,0,0,0,0,0,0,0,1,1,1,1,0,
-        0,1,0,0,1,0,0,0,1,1,0,0,0,1,0,0,1,0,
-        0,1,0,0,1,0,0,0,0,0,0,0,0,1,0,0,1,0,
-        0,1,1,1,1,0,0,0,0,0,0,0,0,1,1,1,1,0,
-        0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-        0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,
-        0,1,1,1,1,0,0,0,0,0,0,0,0,1,1,1,1,0,
-        0,1,0,0,1,0,0,0,0,0,0,0,0,1,0,0,1,0,
-        0,1,0,0,1,0,0,0,0,0,0,0,0,1,0,0,1,0,
-        0,1,1,1,1,0,0,0,1,1,0,0,0,1,1,1,1,0,
-        0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-    ];
+    int[] data = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,
+        1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 1, 0, 0, 1, 0, 0,
+        0, 1, 1, 0, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0,
+        0, 1, 0, 0, 1, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1,
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0,
+        0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 1, 0, 0, 1, 0, 0, 0, 1, 1, 0, 0, 0, 1,
+        0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0,
+        1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,
+        0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1,
+        1, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0,
+        0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 1, 1, 1, 1, 0, 0, 0,
+        1, 1, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,];
     size_t width = 18;
     auto result = slice2d!int(data, width, 1, 1, 4, 4);
     debug dbg(result, 4);
@@ -159,27 +157,27 @@ unittest {
 
 }
 
-
-T[] random_array(T)(size_t size, T min, T max, ulong seed ) 
-if (isNumeric!T)
+T[] random_array(T)(size_t size, T min, T max, ulong seed) if (isNumeric!T)
 {
-    import std.random: Random, uniform;
-    
+    import std.random : Random, uniform;
+
     auto rnd = Random(42);
-    T[]result = new T[](size);
-    foreach(size_t i; 0..size) {
+    T[] result = new T[](size);
+    foreach (size_t i; 0 .. size)
+    {
         result[i] = uniform(min, max, rnd);
     }
     return result;
 }
 
-unittest {
-    import std.range: take;
-    import std.random: Random, uniform;
-    import std.stdio: writeln;
+unittest
+{
+    import std.range : take;
+    import std.random : Random, uniform;
+    import std.stdio : writeln;
 
     auto result = random_array!int(10, 0, 15, 12341234);
-    
+
     assert(result[0] == 12);
     assert(result[1] == 2);
 
@@ -518,30 +516,49 @@ export function sum_elements(matrix) {
 }
 */
 
-/*
-export function replace_elements(
-    matrix,
-    filter = (i) => i < 0,
-    transform = (i) => Math.abs(i)
-) {
 
-    return Array.from(
-        matrix,
-        function(row,y) {
-            return Array.from(
-                row,
-                function(cell, x) {
-                    if (filter(cell)) {
-                        return transform(cell)
-                    }
-                    return cell
+template replace_elements(T)
+{
+    alias MatrixFilter = bool delegate(T);
+    alias MatrixTransformer = T delegate(T);
+
+    import std.math : abs;
+    T[] replace_elements( T[] orig, MatrixFilter filter, MatrixTransformer  transform )
+    {
+        import std.algorithm : map;
+
+        auto result = map!(
+            (T i) {
+                if (filter(i))
+                {
+                    return transform(i);
                 }
-            )
-        }
-    )
+                return i;
+            }
+        )( orig[0..$] ).array;
+
+        return result;
+    }
 }
 
-export function is_on_edge(width, height, x, y, distance) {
+unittest {
+    import std.stdio: writeln;
+    int[5] orig = [1 , 0 , -1, 5, 7];
+    auto filter = delegate bool (int i) => i < 0;
+    auto transformer = delegate int (int i) => 0;
+    auto result = replace_elements!int( orig, filter , transformer );
+    // writeln(result);
+    // [1, 0, 0, 5, 7]
+    assert(result[0] == 1);
+    assert(result[1] == 0);
+    assert(result[2] == 0);
+    assert(result[3] == 5);
+    assert(result[4] == 7);
+}
+
+
+// TODO continue from here 
+bool is_on_edge(size_t width, size_t height, size_t x, size_t y, size_t distance) {
     if (
         x < distance || y < distance
         ||
@@ -551,5 +568,3 @@ export function is_on_edge(width, height, x, y, distance) {
     }
     return false
 }
-
-*/
