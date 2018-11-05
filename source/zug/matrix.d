@@ -558,13 +558,13 @@ unittest {
 
 
 // TODO continue from here 
-bool is_on_edge(size_t width, size_t height, size_t x, size_t y, size_t distance) {
-    if (
-        x < distance || y < distance
-        ||
-        x >= (width - distance) || y >= (height - distance)
-    ) {
-        return true
-    }
-    return false
-}
+// bool is_on_edge(size_t width, size_t height, size_t x, size_t y, size_t distance) {
+//     if (
+//         x < distance || y < distance
+//         ||
+//         x >= (width - distance) || y >= (height - distance)
+//     ) {
+//         return true
+//     }
+//     return false
+// }
