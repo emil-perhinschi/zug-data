@@ -187,54 +187,56 @@ unittest
     // assert(result_float[0] == 5.6181 ); 
 }
 
-/*
+
 
 // fill : (x,y) => do_something_based_on_x_and_y_or_just_return_a_value()
-// allow_cropping: permit the original to be placed partially outside the new
-//    matrix, thus cropping the parts which stay outside
-export function resize(original, offset, new_size, fill, allow_cropping) {
-    if(
-        typeof new_size !== "object"
-        || parseInt(new_size.x) !== new_size.x
-        ||  parseInt(new_size.y) !== new_size.y
-    ) {
-        throw new Error("new_size must be {x: integer, y: integer}")
-    }
+T[] resize(T)( T[] original, size_t width, int offset_x, int offset_y, size_t new_size, T delegate (size_t,size_t) fill) 
+if (isNumeric!T)
+{
+    import std.range: chunks, join;
+    import std.stdio: writeln;
 
-    if (allow_cropping === false) {
-        if (offset.x < 0 || offset.y < 0) {
-            throw new Error("cropping is not allowed and the offset coordinates are negative")
-        }
-        if (
-            original.length > new_size.y
-            || original[0].length > new_size.x
-        ) {
-            throw new Error("cropping is not allowed and the new size is smaller than the original")
-        }
+    auto offset_x_orig = offset_x;
 
-        if (
-            original.length + offset.y > new_size.y
-            || original[0].length + offset.x > new_size.x
-        ) {
-            throw new Error("cropping is not allowed and the offset"
-                + " pushes the original outside the new size")
-        }
-    }
+    auto chunked = original.chunks(width);
+    T[][] result = new T[][](new_size, new_size);
 
-    return Array.from(
-        Array(new_size.y),
-        (y_value, y) => Array.from(
-            Array(new_size.x),
-            function (x_value, x) {
-                if ( original[y + offset.y] !== undefined
-                    && original[y + offset.y][x + offset.x] !== undefined ) {
-                    return original[y + offset.y][x + offset.x]
-                }
-                return fill(x, y)
+    for (int y = 0; y < new_size; y++ ) {
+        offset_x = offset_x_orig;
+        for ( int x = 0; x < new_size; x++ ) {
+            if ( offset_x < 0 || offset_y < 0 ) {
+                result[y][x] = fill(offset_x, offset_y);
+            } else {
+                result[y][x] = chunked[offset_y][offset_x];
             }
-        )
-    )
+            offset_x++;
+        }
+        offset_y++;
+    }
+    return result.join();
 }
+
+unittest {
+    import std.stdio: writeln;
+
+    float[] orig = [
+        1,2,3,4,5,6,7,
+        1,2,3,4,5,6,7,
+        1,2,3,4,5,6,7,
+        1,2,3,4,5,6,7,
+        1,2,3,4,5,6,7,
+        1,2,3,4,5,6,7,
+        1,2,3,4,5,6,7
+    ];
+
+    auto r1 = resize!float(orig, 7, -3, -3, 4, delegate (size_t x, size_t y) => 0);
+    debug dbg(r1, 4);
+    debug dbg(resize!float(orig, 7, -2, -2, 4, delegate (size_t x, size_t y) => 0), 4);
+    debug dbg(resize!float(orig, 7, -1, -1, 4, delegate (size_t x, size_t y) => 0), 4);
+    debug dbg(resize!float(orig, 7,  0,  0, 4, delegate (size_t x, size_t y) => 0), 4);
+}
+
+/*
 
 export function stretch(orig, new_width, new_height) {
     const height = orig.length
@@ -458,37 +460,47 @@ export function enlarge(orig, new_width, new_height) {
     return stretched
 }
 
-export function moving_average(matrix, distance) {
-    if (distance !== parseInt(distance)) {
-        throw new Error("distance " + distance + " is not an integer")
-    }
-
-    if (distance <= 0 ) {
-        throw new Error("distance should be a positive integer")
-    }
-
-    return Array.from(
-        matrix,
-        function (row, y) {
-            return Array.from(
-                row,
-                function (item, x) {
-                    const slice = resize(
-                        matrix,
-                        { "x": x - distance, "y": y - distance },
-                        { "x": 2*distance + 1, "y": 2*distance + 1 },
-                        () => 0, // fill the extra cells with 0s,
-                        true // allow cropping
-                    )
-                    const cells_count = slice.length * slice.length
-                    return sum_elements(slice) / cells_count
-                }
-            )
-        }
-    )
-}
-
 */
+
+
+
+/// TODO finish me 
+T[] moving_average(T)(T[] matrix, size_t width, size_t distance)
+if (isNumeric!T)
+in
+{
+    assert(distance >= 0);
+}
+do 
+{
+    import std.range: chunks;
+    import std.algorithm.iteration: sum;
+
+    T[] result;
+    auto chunked = matrix.chunks(width);
+    
+    // return Array.from(
+    //     matrix,
+    //     function (row, y) {
+    //         return Array.from(
+    //             row,
+    //             function (item, x) {
+    //                 const slice = resize(
+    //                     matrix,
+    //                     { "x": x - distance, "y": y - distance },
+    //                     { "x": 2*distance + 1, "y": 2*distance + 1 },
+    //                     () => 0, // fill the extra cells with 0s,
+    //                     true // allow cropping
+    //                 )
+    //                 const cells_count = slice.length * slice.length
+    //                 return sum_elements(slice) / cells_count
+    //             }
+    //         )
+    //     }
+    // )
+
+    return result;
+}
 
 /*
 /// TODO: is this needed ? already have std.algorithm.iteration: sum 
@@ -516,37 +528,37 @@ export function sum_elements(matrix) {
 }
 */
 
-
 template replace_elements(T)
 {
     alias MatrixFilter = bool delegate(T);
     alias MatrixTransformer = T delegate(T);
 
     import std.math : abs;
-    T[] replace_elements( T[] orig, MatrixFilter filter, MatrixTransformer  transform )
+
+    T[] replace_elements(T[] orig, MatrixFilter filter, MatrixTransformer transform)
     {
         import std.algorithm : map;
 
-        auto result = map!(
-            (T i) {
-                if (filter(i))
-                {
-                    return transform(i);
-                }
-                return i;
+        auto result = map!((T i) {
+            if (filter(i))
+            {
+                return transform(i);
             }
-        )( orig[0..$] ).array;
+            return i;
+        })(orig[0 .. $]).array;
 
         return result;
     }
 }
 
-unittest {
-    import std.stdio: writeln;
-    int[5] orig = [1 , 0 , -1, 5, 7];
-    auto filter = delegate bool (int i) => i < 0;
-    auto transformer = delegate int (int i) => 0;
-    auto result = replace_elements!int( orig, filter , transformer );
+unittest
+{
+    import std.stdio : writeln;
+
+    int[5] orig = [1, 0, -1, 5, 7];
+    auto filter = delegate bool(int i) => i < 0;
+    auto transformer = delegate int(int i) => 0;
+    auto result = replace_elements!int(orig, filter, transformer);
     // writeln(result);
     // [1, 0, 0, 5, 7]
     assert(result[0] == 1);
@@ -556,15 +568,17 @@ unittest {
     assert(result[4] == 7);
 }
 
+bool is_on_edge(size_t width, size_t height, size_t x, size_t y, size_t distance)
+{
+    if (x < distance || y < distance || x >= (width - distance) || y >= (height - distance))
+    {
+        return true;
+    }
+    return false;
+}
 
-// TODO continue from here 
-// bool is_on_edge(size_t width, size_t height, size_t x, size_t y, size_t distance) {
-//     if (
-//         x < distance || y < distance
-//         ||
-//         x >= (width - distance) || y >= (height - distance)
-//     ) {
-//         return true
-//     }
-//     return false
-// }
+unittest
+{
+    assert(is_on_edge(10, 10, 0, 0, 1) == true);
+    assert(is_on_edge(10, 10, 2, 2, 3) == true);
+}
