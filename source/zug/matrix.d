@@ -3,79 +3,248 @@ module zug.matrix;
 import std.array;
 import std.algorithm : map;
 import std.traits;
+import std.range: chunks;
+import std.stdio: writeln;
+import std.conv: to;
 
-/++
-matrices are stored in plain arrays; this might change 
-+/
+bool do_debug() {
+    import std.process;
 
-T[] add_matrices(T)(T[] first, T[] second) if (isNumeric!T)
+    if (environment.get("DEBUG") is null) {
+        return false;
+    }
+
+    int can_debug = environment.get("DEBUG").to!int;
+    if ( can_debug == 0 ) {
+        return false;
+    }
+    return true;
+}
+
+void dbg(T)(T[][] data)
+{
+    if (do_debug) {
+        foreach (T[] row; data)
+        {
+            writeln("#", row);
+        }
+    }
+}
+
+void dbg(T)(T[] data, size_t width)
+{
+    if (do_debug()) {
+        auto chunked = data.chunks(width);
+        foreach (T[] row; chunked)
+        {
+            writeln("#", row);
+        }
+   }
+}
+
+void dbg(T)(Matrix!T orig)
+{
+    if (do_debug()) {
+        auto chunked = orig.data.chunks(orig.width);
+        foreach (T[] row; chunked)
+        {
+            writeln("#", row);
+        }
+    }
+}
+
+struct Offset {
+    size_t x;
+    size_t y;
+}
+
+class Matrix(T) if (isNumeric!T)
+{
+private:
+    T[] data;
+    size_t height;
+    size_t width;
+
+public:
+    this(T[] data, size_t width)
+    in
+    {
+        assert(data.length >= width, "data length should be larger than or equal with 'width'");
+        assert(data.length % width == 0, "data length should be divisible by 'width'");
+    }
+    do
+    {
+        this.data = data;
+        this.width = width;
+        this.height = data.length / width;
+    }
+
+    this(size_t width, size_t height)
+    {
+        this.data = new T[](width * height);
+        this.width = width;
+        this.height = height;
+    }
+
+    void set(size_t index, T value)
+    {
+        this.data[index] = value;
+    }
+
+    T get(size_t index)
+    {
+        return this.data[index];
+    }
+
+    size_t data_length()
+    {
+        return this.data.length;
+    }
+
+    T min()
+    {
+        import std.algorithm.searching : minElement;
+
+        return this.data.minElement;
+    }
+
+    T max()
+    {
+        import std.algorithm.searching : maxElement;
+
+        return this.data.maxElement;
+    }
+
+    Matrix!T dice(T)(Offset offset, size_t width, size_t height)
+    {
+        import std.range : chunks;
+
+        auto chunked = this.data.chunks(this.width);
+
+        T[] result;
+
+        foreach (T[] row; chunked[offset.y .. (offset.y + height)])
+        {
+            result ~= row[offset.x .. (offset.x + width) ].dup;
+        }
+
+        return new Matrix!T(result, width);
+    }
+
+
+}
+
+unittest
+{
+    auto orig = new Matrix!int([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11], 3);
+    dbg(orig);
+}
+
+unittest
+{
+    // dfmt off
+    int[] data = [
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+        0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0,
+        0, 1, 0, 0, 1, 0, 0, 0, 1, 1, 0, 0, 0, 1, 0, 0, 1, 0,
+        0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 
+        0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+        0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+        0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 
+        0, 1, 0, 0, 1, 0, 0, 0, 1, 1, 0, 0, 0, 1, 0, 0, 1, 0, 
+        0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 
+        0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0,
+        0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 
+        0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 
+        0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 
+        0, 1, 1, 1, 1, 0, 0, 0, 1, 1, 0, 0, 0, 1, 1, 1, 1, 0, 
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+    ];
+    // dfmt on
+
+    size_t width = 18;
+    auto orig = new Matrix!int(data, width);
+
+    Matrix!int result = orig.dice!int( Offset(1, 1), 4, 4 );
+    debug dbg!int(result);
+    foreach(size_t i; 0..4) {
+        assert(result.get(1) == 1);
+    }
+    assert(result.get(1) == 1);
+    assert(result.get(5) == 0);
+    assert(result.get(6) == 0);
+    assert(result.get(7) == 1);
+}
+
+Matrix!T add(T)(Matrix!T first, Matrix!T second)
 {
 
-    if (first.length != second.length)
+    if (first.width != second.width || first.height != second.height)
     {
         throw new Error("the matrices don't have the same size");
     }
 
-    auto result = new T[](first.length);
-    foreach (size_t i; 0 .. first.length)
+    auto result = new Matrix!T(first.width, first.height);
+
+    foreach (size_t i; 0 .. first.data_length)
     {
-        result[i] = first[i] + second[i];
+        result.set(i, first.get(i) + second.get(i));
     }
     return result;
 }
 
 unittest
 {
-    import std.stdio;
 
-    double[4] first = [1, 2, 3, 4];
-    double[4] second = [0, 2, 4, 6];
+    auto first = new Matrix!long([1, 2, 3, 4], 4);
+    auto second = new Matrix!long([0, 2, 4, 6], 4);
 
-    auto result = add_matrices!double(first, second);
-    assert(result[0] == 1);
-    assert(result[1] == 4);
-    assert(result[2] == 7);
-    assert(result[3] == 10);
+    auto result = add!long(first, second);
+    assert(result.get(0) == 1);
+    assert(result.get(1) == 4);
+    assert(result.get(2) == 7);
+    assert(result.get(3) == 10);
 }
 
-int[] normalize_matrix(T)(T[] orig, T normal_min, T normal_max) if (isNumeric!T)
+Matrix!int normalize_matrix(T)(Matrix!T orig, T normal_min, T normal_max)
+        if (isNumeric!T)
 {
     import std.array;
     import std.algorithm;
 
-    auto min = orig.minElement;
-    auto max = orig.maxElement;
+    auto min = orig.min;
+    auto max = orig.max;
 
-    return map!((T value) => normalize_value!T(value, min, max, normal_min, normal_max))(
-            orig[0 .. $]).array;
+    auto new_data = map!((T value) => normalize_value!T(value, min, max, normal_min, normal_max))(
+            orig.data[0 .. $]).array;
+    return new Matrix!int(new_data, orig.width);
 }
 
 unittest
 {
-    import std.stdio : writeln;
-
-    float[] orig = [1.1, 100.1, 50.1];
+    auto orig = new Matrix!float([1.1, 100.1, 50.1], 3);
     float normal_min = 0.0;
     float normal_max = 16.0;
-    int[] result = normalize_matrix!float(orig, normal_min, normal_max);
+    auto result = normalize_matrix!float(orig, normal_min, normal_max);
 
-    assert(result[0] == 0);
-    assert(result[1] == 16);
+    assert(result.get(0) == 0);
+    assert(result.get(1) == 16);
     // assert(result[2] ==  7.91919); // this fails for some reason , probably float weiredness ? TODO: investigate further
 }
 
 unittest
 {
-    import std.stdio : writeln;
-
-    double[] orig = [0, 255, 125];
+    auto orig = new Matrix!double([0, 255, 125], 3);
     double normal_min = 0;
     double normal_max = 16;
-    int[] result = normalize_matrix!double(orig, normal_min, normal_max);
+    auto result = normalize_matrix!double(orig, normal_min, normal_max);
 
-    assert(result[0] == 0);
-    assert(result[1] == 16);
-    assert(result[2] == 7);
+    assert(result.get(0) == 0);
+    assert(result.get(1) == 16);
+    assert(result.get(2) == 7);
 }
 
 /++
@@ -88,7 +257,6 @@ int normalize_value(T)(T item, T actual_min_value, T actual_max_value, T normal_
         if (isNumeric!T)
 {
     import std.math;
-    import std.conv : to;
 
     if (normal_min == normal_max)
     {
@@ -97,64 +265,6 @@ int normalize_value(T)(T item, T actual_min_value, T actual_max_value, T normal_
 
     return (normal_min + (item - actual_min_value) * (normal_max - normal_min) / (
             actual_max_value - actual_min_value)).to!int;
-}
-
-T[] slice2d(T)(T[] original, size_t width, size_t start_x, size_t start_y,
-        size_t size_x, size_t size_y) if (isNumeric!T)
-{
-    import std.range : chunks;
-    import std.stdio;
-
-    auto chunked = original.chunks(width);
-
-    T[] result;
-
-    foreach (T[] row; chunked[start_y .. (start_y + size_y)])
-    {
-        auto selected = row[start_x .. (start_x + size_x)].dup;
-
-        result ~= selected;
-    }
-
-    return result.dup;
-}
-
-void dbg(T)(T[] data, size_t width)
-{
-    import std.range : chunks;
-    import std.stdio : writeln;
-
-    auto chunked = data.chunks(width);
-    foreach (T[] row; chunked)
-    {
-        writeln("#", row);
-    }
-}
-
-unittest
-{
-    import std.stdio : writeln;
-
-    int[] data = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,
-        1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 1, 0, 0, 1, 0, 0,
-        0, 1, 1, 0, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0,
-        0, 1, 0, 0, 1, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0,
-        0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 1, 0, 0, 1, 0, 0, 0, 1, 1, 0, 0, 0, 1,
-        0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0,
-        1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,
-        0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1,
-        1, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0,
-        0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 1, 1, 1, 1, 0, 0, 0,
-        1, 1, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,];
-    size_t width = 18;
-    auto result = slice2d!int(data, width, 1, 1, 4, 4);
-    debug dbg(result, 4);
-    assert(result[0] == 1);
-    assert(result[5] == 0);
-
 }
 
 T[] random_array(T)(size_t size, T min, T max, ulong seed) if (isNumeric!T)
@@ -174,7 +284,6 @@ unittest
 {
     import std.range : take;
     import std.random : Random, uniform;
-    import std.stdio : writeln;
 
     auto result = random_array!int(10, 0, 15, 12341234);
 
@@ -187,26 +296,28 @@ unittest
     // assert(result_float[0] == 5.6181 ); 
 }
 
-
-
 // fill : (x,y) => do_something_based_on_x_and_y_or_just_return_a_value()
-T[] resize(T)( T[] original, size_t width, int offset_x, int offset_y, size_t new_size, T delegate (size_t,size_t) fill) 
-if (isNumeric!T)
+T[] resize(T)(T[] original, size_t width, int offset_x, int offset_y,
+        size_t new_size, T delegate(size_t, size_t) fill) if (isNumeric!T)
 {
-    import std.range: chunks, join;
-    import std.stdio: writeln;
+    import std.range : chunks, join;
 
     auto offset_x_orig = offset_x;
 
     auto chunked = original.chunks(width);
     T[][] result = new T[][](new_size, new_size);
 
-    for (int y = 0; y < new_size; y++ ) {
+    for (int y = 0; y < new_size; y++)
+    {
         offset_x = offset_x_orig;
-        for ( int x = 0; x < new_size; x++ ) {
-            if ( offset_x < 0 || offset_y < 0 ) {
+        for (int x = 0; x < new_size; x++)
+        {
+            if (offset_x < 0 || offset_y < 0)
+            {
                 result[y][x] = fill(offset_x, offset_y);
-            } else {
+            }
+            else
+            {
                 result[y][x] = chunked[offset_y][offset_x];
             }
             offset_x++;
@@ -216,24 +327,40 @@ if (isNumeric!T)
     return result.join();
 }
 
-unittest {
-    import std.stdio: writeln;
+unittest
+{
+    float[] orig = [1, 2, 3, 4, 5, 6, 7, 1, 2, 3, 4, 5, 6, 7, 1, 2, 3, 4, 5,
+        6, 7, 1, 2, 3, 4, 5, 6, 7, 1, 2, 3, 4, 5, 6, 7, 1, 2, 3, 4, 5, 6, 7, 1, 2, 3, 4, 5, 6, 7];
 
-    float[] orig = [
-        1,2,3,4,5,6,7,
-        1,2,3,4,5,6,7,
-        1,2,3,4,5,6,7,
-        1,2,3,4,5,6,7,
-        1,2,3,4,5,6,7,
-        1,2,3,4,5,6,7,
-        1,2,3,4,5,6,7
-    ];
-
-    auto r1 = resize!float(orig, 7, -3, -3, 4, delegate (size_t x, size_t y) => 0);
+    auto r1 = resize!float(orig, 7, -3, -3, 4, delegate(size_t x, size_t y) => 0);
     debug dbg(r1, 4);
-    debug dbg(resize!float(orig, 7, -2, -2, 4, delegate (size_t x, size_t y) => 0), 4);
-    debug dbg(resize!float(orig, 7, -1, -1, 4, delegate (size_t x, size_t y) => 0), 4);
-    debug dbg(resize!float(orig, 7,  0,  0, 4, delegate (size_t x, size_t y) => 0), 4);
+    debug dbg(resize!float(orig, 7, -2, -2, 4, delegate(size_t x, size_t y) => 0), 4);
+    debug dbg(resize!float(orig, 7, -1, -1, 4, delegate(size_t x, size_t y) => 0), 4);
+    debug dbg(resize!float(orig, 7, 0, 0, 4, delegate(size_t x, size_t y) => 0), 4);
+}
+
+/++
+[]
++/
+
+T[] stretch(T)(T[] orgin, size_t width, T scale_x, T scale_y)
+{
+    T[] result;
+    return result;
+}
+
+unittest
+{
+    import std.range : chunks;
+    import std.array : array;
+
+    int[] orig = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+
+    auto chunked = orig.chunks(4);
+    dbg(chunked.array);
+
+    chunked[0][0] = 1;
+    dbg(orig, 4);
 }
 
 /*
@@ -462,23 +589,19 @@ export function enlarge(orig, new_width, new_height) {
 
 */
 
-
-
-/// TODO finish me 
-T[] moving_average(T)(T[] matrix, size_t width, size_t distance)
-if (isNumeric!T)
+T[] moving_average(T)(T[] matrix, size_t width, size_t distance) if (isNumeric!T)
 in
 {
     assert(distance >= 0);
 }
-do 
+do
 {
-    import std.range: chunks;
-    import std.algorithm.iteration: sum;
+    import std.range : chunks;
+    import std.algorithm.iteration : sum;
 
     T[] result;
     auto chunked = matrix.chunks(width);
-    
+
     // return Array.from(
     //     matrix,
     //     function (row, y) {
@@ -553,8 +676,6 @@ template replace_elements(T)
 
 unittest
 {
-    import std.stdio : writeln;
-
     int[5] orig = [1, 0, -1, 5, 7];
     auto filter = delegate bool(int i) => i < 0;
     auto transformer = delegate int(int i) => 0;
