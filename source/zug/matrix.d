@@ -114,9 +114,26 @@ public:
         this.data[index] = value;
     }
 
+    void set(size_t x, size_t y, T value)
+    {
+        this.data[this.width * y + x] = value;
+    }
+
     T get(size_t index)
     {
         return this.data[index];
+    }
+
+    T get(size_t x, size_t y) {
+        return this.data[ this.width * y + x ];
+    }
+
+    unittest {
+        Matrix!int orig = new Matrix!int(3,3);
+        orig.set(0,0,1);
+        assert(orig.get(0,0) == orig.get(0));
+        orig.set(1,1,111);
+        assert(orig.get(1,1) == orig.get(4));
     }
 
     size_t data_length()
