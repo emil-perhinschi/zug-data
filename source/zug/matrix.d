@@ -29,7 +29,7 @@ void dbg(T)(T[][] data, string label = "")
 {
     if (do_debug)
     {
-                if (label != "") {
+        if (label != "") {
             label = "\n# " ~ label;
         }
         writeln(label);
@@ -40,6 +40,17 @@ void dbg(T)(T[][] data, string label = "")
         writeln();
     }
 }
+
+// void dbg(T)(T[] data, string label = "") 
+// {
+//     if (do_debug()) 
+//     {
+//         if (label != "") {
+//             label = "\n# " ~ label;
+//         }
+//         writeln("# ", data);
+//     }
+// }
 
 void dbg(T)(T[] data, size_t width, string label = "")
 {
@@ -81,7 +92,9 @@ struct Offset
     size_t y;
 }
 
-class Matrix(T) if (isNumeric!T)
+alias CoordinatesMatrix = size_t[][];
+
+struct Matrix(T) if (isNumeric!T)
 {
 private:
     T[] data;
@@ -129,7 +142,7 @@ public:
     }
 
     unittest {
-        Matrix!int orig = new Matrix!int(3,3);
+        Matrix!int orig = Matrix!int(3,3);
         orig.set(0,0,1);
         assert(orig.get(0,0) == orig.get(0));
         orig.set(1,1,111);
@@ -168,7 +181,7 @@ public:
             result ~= row[offset.x .. (offset.x + width)].dup;
         }
 
-        return new Matrix!T(result, width);
+        return Matrix!T(result, width);
     }
 
     Matrix!int normalize(T)(T normal_min, T normal_max) if (isNumeric!T)
@@ -181,12 +194,12 @@ public:
 
         auto new_data = map!((T value) => normalize_value!(T, int)(value, min,
                 max, normal_min, normal_max))(this.data[0 .. $]).array;
-        return new Matrix!int(new_data, this.width);
+        return Matrix!int(new_data, this.width);
     }
 
     unittest
     {
-        auto orig = new Matrix!float([1.1, 100.1, 50.1], 3);
+        auto orig = Matrix!float([1.1, 100.1, 50.1], 3);
         float normal_min = 0.0;
         float normal_max = 16.0;
         auto result = orig.normalize!float(normal_min, normal_max);
@@ -198,7 +211,7 @@ public:
 
     unittest
     {
-        auto orig = new Matrix!double([0, 255, 125], 3);
+        auto orig = Matrix!double([0, 255, 125], 3);
         double normal_min = 0;
         double normal_max = 16;
         auto result = orig.normalize!double(normal_min, normal_max);
@@ -208,12 +221,64 @@ public:
         assert(result.get(2) == 7);
     }
 
+    CoordinatesMatrix coordinates() {
+        size_t total = this.width * this.height;
+        CoordinatesMatrix result = new size_t[][](total, 2);
+
+        for( size_t i = 0; i < total; i++ ) {
+            result[i] = [i % this.width, ( i - (i % this.width) )/this.width ];
+        }
+        return result;
+    }
+
+    unittest
+    {
+        auto orig = Matrix!int([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11], 3);
+        dbg(orig, "Matrix 3x4");    
+        auto coord = orig.coordinates();
+        dbg(coord, "coordinates");
+        
+    }
+
+    T[] column(size_t x) {
+        T[] result = new T[](this.height);
+        foreach(size_t i; 0..this.height) {
+            result[i] = this.get(x,i);
+        }
+        return result;
+    }
+
+    unittest 
+    {
+        Matrix!int orig = Matrix!int([1,2,3,4,5,6,7,8,9],3);
+        dbg!int(orig, "matrix for column");
+        dbg!int(orig.column(1), orig.height, "column 1");
+    }
+
+    T[] row(size_t y) {
+        T[] result = new T[](this.width);
+        foreach (size_t i; 0..this.width) {
+            result[i] = this.get(i,y);
+        }
+        return result;
+    }
+
+    unittest
+    {
+        Matrix!int orig = Matrix!int([1,2,3,4,5,6,7,8,9],3);
+        dbg!int(orig, "matrix for row");
+        dbg!int(orig.row(1), orig.width, "row 1");
+    }
 }
 
 unittest
 {
-    auto orig = new Matrix!int([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11], 3);
-    dbg(orig, "Matrix");
+    auto orig = Matrix!int([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11], 3);
+    dbg(orig, "Matrix 3x4");
+    assert(orig.get(0,0) == 0,  "get 0,0");
+    assert(orig.get(1,1) == 4,  "get 1,1");
+    assert(orig.get(2,2) == 8,  "get 2,2");
+    assert(orig.get(2,3) == 11, "get 2,3");
 }
 
 unittest
@@ -242,10 +307,10 @@ unittest
     // dfmt on
 
     size_t width = 18;
-    auto orig = new Matrix!int(data, width);
+    auto orig = Matrix!int(data, width);
 
     Matrix!int result = orig.dice!int(Offset(1, 1), 4, 4);
-    debug dbg!int(result);
+    debug dbg!int(result, "dice 1,1->4,4");
     foreach (size_t i; 0 .. 4)
     {
         assert(result.get(1) == 1);
@@ -264,7 +329,7 @@ Matrix!T add(T)(Matrix!T first, Matrix!T second)
         throw new Error("the matrices don't have the same size");
     }
 
-    auto result = new Matrix!T(first.width, first.height);
+    auto result = Matrix!T(first.width, first.height);
 
     foreach (size_t i; 0 .. first.data_length)
     {
@@ -276,8 +341,8 @@ Matrix!T add(T)(Matrix!T first, Matrix!T second)
 unittest
 {
 
-    auto first = new Matrix!long([1, 2, 3, 4], 4);
-    auto second = new Matrix!long([0, 2, 4, 6], 4);
+    auto first = Matrix!long([1, 2, 3, 4], 4);
+    auto second = Matrix!long([0, 2, 4, 6], 4);
 
     auto result = add!long(first, second);
     assert(result.get(0) == 1);
@@ -383,7 +448,7 @@ if (isNumeric!T)
         }
         offset_y++;
     }
-    return new Matrix!T(result.join(), window_size);
+    return Matrix!T(result.join(), window_size);
 }
 
 unittest
@@ -400,7 +465,7 @@ unittest
     ];
     // dfmt on
 
-    Matrix!float orig = new Matrix!float(data, 7);
+    Matrix!float orig = Matrix!float(data, 7);
 
     auto r1 = orig.window!float(-3, -3, 4, delegate(size_t x, size_t y) => 0);
     debug dbg(r1,"Matrix.window");
@@ -773,3 +838,49 @@ unittest
     assert(is_on_edge(10, 10, 0, 0, 1) == true);
     assert(is_on_edge(10, 10, 2, 2, 3) == true);
 }
+
+Matrix!T multiply_matrices(T)(Matrix!T first, Matrix!T second)
+in 
+{
+    assert(first.width == second.height, "width of the first matrix must be equal with the height of the second matrix");
+}
+do
+{
+    size_t width = first.height;
+    size_t height = second.width;
+    Matrix!T result = Matrix!T(width, height);
+    for (int y = 0; y < height; y++ ) {
+        for (int x = 0; x < width; x ++) {
+            // first.row X second.column
+            T[] first_row = first.row(x);
+            T[] second_column = second.column(y);
+            foreach(size_t i; 0..first.width) {
+                result.set(x, y, first_row[i] * second_column[i] );
+            }
+        }
+    }
+
+    return result;
+}
+
+
+unittest
+{
+    auto first  = Matrix!int([1,0], 1);
+    auto second = Matrix!int([2,2], 2);
+    dbg(first,  "multiplied first");
+    dbg(second, "multiplied second");
+    auto result = multiply_matrices( first, second );
+
+    dbg(result, "multiplied matrices");
+    size_t x = 2;
+    size_t y = 4;
+    // int[x][y] some 
+    int[4][2] some;
+    writeln(some);
+
+    auto test = Matrix!int(2,3);
+    dbg(test, "xxxxxxxxxxxxxxx");
+    writeln(test.data);
+}
+
