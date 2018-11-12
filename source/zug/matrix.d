@@ -855,7 +855,7 @@ do
             T[] first_row = first.row(x);
             T[] second_column = second.column(y);
             foreach(size_t i; 0..first.width) {
-                result.set(x, y, first_row[i] * second_column[i] );
+                result.set(y, x, result.get(y,x) + first_row[i] * second_column[i] );
             }
         }
     }
@@ -863,24 +863,24 @@ do
     return result;
 }
 
-
+// examples for tests https://www.intmath.com/matrices-determinants/matrix-multiplication-examples.php
 unittest
 {
-    auto first  = Matrix!int([1,0], 1);
-    auto second = Matrix!int([2,2], 2);
+    auto first  = Matrix!int([1,2,3,4,5,6], 3);
+    auto second = Matrix!int([7,8,9,10,11,12], 2);
     dbg(first,  "multiplied first");
     dbg(second, "multiplied second");
     auto result = multiply_matrices( first, second );
 
-    dbg(result, "multiplied matrices");
-    size_t x = 2;
-    size_t y = 4;
-    // int[x][y] some 
-    int[4][2] some;
-    writeln(some);
+    // dbg(result, "multiplied result");
+    // size_t x = 2;
+    // size_t y = 4;
+    // // int[x][y] some 
+    // int[4][2] some;
+    // writeln(some);
 
-    auto test = Matrix!int(2,3);
-    dbg(test, "xxxxxxxxxxxxxxx");
-    writeln(test.data);
+    // auto test = Matrix!int(2,3);
+    // dbg(test, "xxxxxxxxxxxxxxx");
+    // writeln(test.data);
 }
 
