@@ -111,7 +111,6 @@ struct Matrix(T) if (isNumeric!T)
     size_t height;
     size_t width;
 
-
     ///
     this(T[] data, size_t width)
     in
@@ -453,63 +452,27 @@ struct Matrix(T) if (isNumeric!T)
     }
     do
     {
-        if (scale_x == 1 && scale_y == 1 )
+        if (scale_x == 1 && scale_y == 1)
         {
             return this;
         }
 
         auto coord = this.coordinates();
-        size_t transformation_matrix = [
-            new_size_x, 0,
-            0,          new_size_y
-        ];
+        size_t transformation_matrix = [new_size_x, 0, 0, new_size_y];
         auto new_coords = multiply(coord, transformation_matrix);
 
-        for (size_t i; i < new_coords.height; i++) {
+        for (size_t i; i < new_coords.height; i++)
+        {
             // result.set(0,i, )
         }
 
         return result;
     }
-    ///
+    /// TODO
     unittest
     {
-        auto orig = Matrix!int(3,3);
+        auto orig = Matrix!int(3, 3);
     }
-
-    /// TODO smooth the matrix by averaging values in the window
-    T[] moving_average(T)(size_t window_width, size_t window_height)
-            if (isNumeric!T)
-    in
-    {
-        assert(distance >= 0);
-    }
-    do
-    {
-
-        // return Array.from(
-        //     matrix,
-        //     function (row, y) {
-        //         return Array.from(
-        //             row,
-        //             function (item, x) {
-        //                 const slice = resize(
-        //                     matrix,
-        //                     { "x": x - distance, "y": y - distance },
-        //                     { "x": 2*distance + 1, "y": 2*distance + 1 },
-        //                     () => 0, // fill the extra cells with 0s,
-        //                     true // allow cropping
-        //                 )
-        //                 const cells_count = slice.length * slice.length
-        //                 return sum_elements(slice) / cells_count
-        //             }
-        //         )
-        //     }
-        // )
-
-        return result;
-    }
-
 }
 
 /// Matrix instantiation
@@ -549,6 +512,140 @@ unittest
     int result = normalize_value!(int, int)(orig, actual_min_value,
             actual_max_value, normal_min, normal_max);
     assert(result == 63);
+}
+
+/**
+* Pick elements of a matrix around an element in a square shape whose sides
+*    are equal with 2*distance + 1 .
+*    
+* This is the default shaper for the moving_average function
+* 
+* Params:
+*   orig     = original matrix
+*   x        = x coordinate for the current element in orig
+*   y        = y coordinate for the current element in orig
+*   distance = how large should be the window
+
+* Returns: an array of elements picked, not including the current element
+*/
+// TODO unittest
+T[] shaper_square(T)(Matrix!T orig, size_t x, size_t y, size_t distance)
+        if (isNumeric!T)
+in
+{
+    assert(distance > 0, "distance must be positive");
+    assert(distance < orig.height, "window must be smaller than the height of the orignal");
+    assert(distance < orig.width, "window must be smaller than the width of the original");
+}
+do
+{
+    // close to the left edge
+    size_t start_x = x < distance ? 0 : x - distance;
+    // close to the top edge
+    size_t start_y = y < distance ? 0 : y - distance;
+    // close to the right edge
+    size_t end_x = orig.width - x < distance ? orig.width : orig.width - x;
+    // close to the bottom edge
+    size_t end_y = orig.height - y < distance ? orig.height : orig.height - y;
+
+    T[] result;
+    for (size_t i = start_y; i < end_y + 1; i++) {
+        for (size_t j = start_x; j < end_x + 1; j++) {
+            if (i == y && j == x) {
+                continue;
+            }
+            result ~= orig.get(j,i);
+        }
+    }
+    return result;
+}
+// TODO shaper_circle
+
+
+/**
+*  Simple moving average calculator callback, the default callback passed to the moving_average function
+*
+*  Params:
+*    orig = Matrix!T, original matrix 
+*    x = size_t, current element x coordinate
+*    y = size_t, current element y coordinate
+*    window = T[], the moving window as retrieved by the shaper callback sent to moving_average
+*
+*  Returns: a number of the type U specified when calling the function
+*/
+U moving_average_simple_calculator(U, T)(Matrix!T orig, size_t x, size_t y, T[] window)
+if (isNumeric!T) 
+{
+    import std.algorithm.iteration: sum;
+    auto total = orig.get(x,y) + window.sum;
+    auto count = window.length.to!T + 1;
+    
+    static if ( is(U == T) ) {
+        return total/count;
+    }
+    else {
+        return total.to!U/count.to!U;
+    }
+}
+/// TODO: kinda works, needs more tests  
+unittest 
+{
+    auto orig = Matrix!int(3,3);
+    size_t x = 1;
+    size_t y = 1;
+    orig.set(x, y, 1);
+    int[] window = [2, 2, 2];
+
+    auto result = orig.moving_average_simple_calculator!(float,int)(x, y, window);
+    assert(result == 1.75, "simple average of 2,2,2 and 1 is 1.75 as expected");
+}
+
+/**
+* TODO Smooth the matrix/height map by averaging values in a window around each element
+*  
+*  
+* Params:
+*   distance   = how far should be the elements to be picked for averaging
+*   shaper     = function which will pick the elements and shape the window
+*                for example a square window will pick elements in a square with the side 2*distance + 1  
+*   calculator = delegate which will calculate the average (plain, weighted, exponential etc.), deal
+*              edges etc.
+*   
+* Returns: a new matrix the same type and size as the original
+*/
+T[] moving_average(T)(
+    size_t distance, 
+    T[] function(Matrix!T, size_t, size_t, size_t) shaper = &shaper_square, 
+    T delegate(Matrix!T, size_t, size_t, T[]) calculator = &moving_average_simple_calculator
+) if (isNumeric!T)
+in
+{
+    assert(distance >= 0);
+}
+do
+{
+
+    // return Array.from(
+    //     matrix,
+    //     function (row, y) {
+    //         return Array.from(
+    //             row,
+    //             function (item, x) {
+    //                 const slice = resize(
+    //                     matrix,
+    //                     { "x": x - distance, "y": y - distance },
+    //                     { "x": 2*distance + 1, "y": 2*distance + 1 },
+    //                     () => 0, // fill the extra cells with 0s,
+    //                     true // allow cropping
+    //                 )
+    //                 const cells_count = slice.length * slice.length
+    //                 return sum_elements(slice) / cells_count
+    //             }
+    //         )
+    //     }
+    // )
+
+    return result;
 }
 
 ///
@@ -686,23 +783,23 @@ export function sum_elements(matrix) {
 
 // dfmt off
 int[] data = [
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0,
     0, 1, 0, 0, 1, 0, 0, 0, 1, 1, 0, 0, 0, 1, 0, 0, 1, 0,
-    0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 
-    0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
-    0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
-    0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 
-    0, 1, 0, 0, 1, 0, 0, 0, 1, 1, 0, 0, 0, 1, 0, 0, 1, 0, 
-    0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 
-    0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 
+    0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0,
+    0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0,
+    0, 1, 0, 0, 1, 0, 0, 0, 1, 1, 0, 0, 0, 1, 0, 0, 1, 0,
+    0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0,
+    0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0,
-    0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 
-    0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 
-    0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 
-    0, 1, 1, 1, 1, 0, 0, 0, 1, 1, 0, 0, 0, 1, 1, 1, 1, 0, 
+    0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0,
+    0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0,
+    0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0,
+    0, 1, 1, 1, 1, 0, 0, 0, 1, 1, 0, 0, 0, 1, 1, 1, 1, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
 ];
 // dfmt on
@@ -934,3 +1031,31 @@ export function enlarge(orig, new_width, new_height) {
 }
 
 */
+
+
+private T[] sample_2d_array(T)() if (isNumeric!T) 
+{
+    // dfmt off
+    T[] data = [
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0,
+        0, 1, 0, 0, 1, 0, 0, 0, 1, 1, 0, 0, 0, 1, 0, 0, 1, 0,
+        0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0,
+        0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0,
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0,
+        0, 1, 0, 0, 1, 0, 0, 0, 1, 1, 0, 0, 0, 1, 0, 0, 1, 0,
+        0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0,
+        0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0,
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0,
+        0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0,
+        0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0,
+        0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0,
+        0, 1, 1, 1, 1, 0, 0, 0, 1, 1, 0, 0, 0, 1, 1, 1, 1, 0,
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+    ];
+    // dfmt on
+    return data;
+}
