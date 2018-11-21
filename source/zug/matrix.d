@@ -106,12 +106,12 @@ alias CoordinatesMatrix = size_t[];
 ///
 struct Matrix(T) if (isNumeric!T)
 {
-private:
+
     T[] data;
     size_t height;
     size_t width;
 
-public:
+
     ///
     this(T[] data, size_t width)
     in
@@ -446,15 +446,14 @@ public:
 
     // TODO 
     /// stretch can only create an enlarged version of the original, else use squeeze (TODO squeeze)
-    Matrix!T stretch(T)(size_t new_size_x, size_t new_size_y)
+    Matrix!T stretch(T)(size_t scale_x, size_t scale_y)
     in
     {
-        assert(this.width <= new_size_x && this.height <= new_size_y,
-                "new dimensions should be greather or equal than the old dimensions");
+        assert(scale_x >= 1 && scale_y >= 1);
     }
     do
     {
-        if (new_size_x == this.width && new_size_y == this.height)
+        if (scale_x == 1 && scale_y == 1 )
         {
             return this;
         }
@@ -465,16 +464,17 @@ public:
             0,          new_size_y
         ];
         auto new_coords = multiply(coord, transformation_matrix);
-        auto result = Matrix!T(new_size_x, new_size_y);
 
         for (size_t i; i < new_coords.height; i++) {
             // result.set(0,i, )
         }
 
+        return result;
     }
     ///
     unittest
     {
+        auto orig = Matrix!int(3,3);
     }
 
     /// TODO smooth the matrix by averaging values in the window
@@ -625,7 +625,6 @@ unittest
     assert(result.get(1, 0) == 64);
     assert(result.get(0, 1) == 139);
     assert(result.get(1, 1) == 154);
-
 }
 
 /// add two matrices

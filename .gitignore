@@ -13,3 +13,8 @@ zug-matrix
 *.o
 *.obj
 *.lst
+
+libzug-matrix.a
+links.txt
+size
+
