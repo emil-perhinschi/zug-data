@@ -544,14 +544,16 @@ do
     // close to the top edge
     size_t start_y = y < distance ? 0 : y - distance;
     // close to the right edge
-    size_t end_x = orig.width - x < distance ? orig.width : orig.width - x;
+    size_t end_x = distance + x > orig.width  ? orig.width : x + distance;
     // close to the bottom edge
-    size_t end_y = orig.height - y < distance ? orig.height : orig.height - y;
+    size_t end_y = distance + y > orig.height ? orig.height : y + distance;
 
     T[] result;
     for (size_t i = start_y; i < end_y + 1; i++) {
         for (size_t j = start_x; j < end_x + 1; j++) {
             if (i == y && j == x) {
+                // don't add the element around which the window is built
+                // this will allow for weighting
                 continue;
             }
             result ~= orig.get(j,i);
@@ -559,8 +561,94 @@ do
     }
     return result;
 }
-// TODO shaper_circle
 
+unittest
+{
+    Matrix!int orig = Matrix!int(8,8);
+    // change one element, enable testing if it is in the right position
+    orig.set(3, 3, 1);
+    auto window = orig.shaper_square(4,4,1);
+
+    dbg(window,1, "shaper_square(4,4,1)");
+    assert(window.length == 8, "got 8 elements in the window");
+    assert(window[0] == 1, "changed element in orig is in the expected spot");
+    assert(window[1] == 0, "unchanged element in orig is in the expected spot");
+
+    auto larger_window = orig.shaper_square(4,4,2);
+    assert(larger_window.length == 24, "got 24 elements in the larger window");
+    assert(larger_window[6] == 1, "changed element in orig is in the expected spot");
+    assert(larger_window[7] == 0, "unchanged element in orig is in the expected spot");
+    dbg(larger_window, 1, "shaper_square(4,4,2)");
+}
+
+/**
+* Pick elements of a matrix around an element in a round shape whose radius is 
+*   equal or less than the distance. It reduces the number of elements to 
+*   check by getting a square window first; if the rounded (std.math.round) 
+*   distance between the reference element and the inspected element is less 
+*   or equal with the distance parameter the element is selected for the window.
+*
+* This is the default shaper for the moving_average function
+*
+* Params:
+*   orig     = original matrix
+*   x        = x coordinate for the current element in orig
+*   y        = y coordinate for the current element in orig
+*   distance = how large should be the window
+*
+* Returns: an array of elements picked, not including the current element
+*/
+// TODO unittest
+T[] shaper_circle(T)(Matrix!T orig, size_t x, size_t y, size_t distance)
+        if (isNumeric!T)
+in
+{
+    assert(distance > 0, "distance must be positive");
+    assert(distance < orig.height, "window must be smaller than the height of the orignal");
+    assert(distance < orig.width, "window must be smaller than the width of the original");
+}
+do
+{
+    import std.math: sqrt, round;
+
+    // close to the left edge
+    size_t start_x = x < distance ? 0 : x - distance;
+    // close to the top edge
+    size_t start_y = y < distance ? 0 : y - distance;
+    // close to the right edge
+    size_t end_x = distance + x > orig.width  ? orig.width : x + distance;
+    // close to the bottom edge
+    size_t end_y = distance + y > orig.height ? orig.height : y + distance;
+
+    T[] result;
+    for (size_t i = start_y; i < end_y + 1; i++) {
+        for (size_t j = start_x; j < end_x + 1; j++) {
+            if (i == y && j == x) {
+                // don't add the element around which the window is built
+                // this will allow for weighting
+                continue;
+            }
+            real how_far = sqrt( ((x - j)*(x - j) + (y - i)*(y - i) ).to!real );
+            if (round(how_far) <= distance) {
+                result ~= orig.get(j,i);
+            }
+        }
+    }
+    return result;
+}
+
+unittest
+{
+    Matrix!int orig = Matrix!int(8,8);
+    // change one element, enable testing if it is in the right position
+    orig.set(3, 3, 1);
+    auto window = orig.shaper_circle(4,4,2);
+
+    dbg(window,1, "shaper_circle(4,4,2)");
+    assert(window.length == 20, "got 8 elements in the window");
+    assert(window[4] == 1, "changed element in orig is in the expected spot");
+    assert(window[1] == 0, "unchanged element in orig is in the expected spot");
+}
 
 /**
 *  Simple moving average calculator callback, the default callback passed to the moving_average function
@@ -587,7 +675,6 @@ if (isNumeric!T)
         return total.to!U/count.to!U;
     }
 }
-/// TODO: kinda works, needs more tests  
 unittest 
 {
     auto orig = Matrix!int(3,3);
@@ -601,7 +688,7 @@ unittest
 }
 
 /**
-* TODO Smooth the matrix/height map by averaging values in a window around each element
+* Smooth the matrix/height map by averaging values in a window around each element
 *  
 *  
 * Params:
