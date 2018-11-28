@@ -544,9 +544,9 @@ do
     // close to the top edge
     size_t start_y = y < distance ? 0 : y - distance;
     // close to the right edge
-    size_t end_x = distance + x > orig.width  ? orig.width : x + distance;
+    size_t end_x = distance + x >= orig.width  ? orig.width : x + distance;
     // close to the bottom edge
-    size_t end_y = distance + y > orig.height ? orig.height : y + distance;
+    size_t end_y = distance + y >= orig.height ? orig.height : y + distance;
 
     T[] result;
     for (size_t i = start_y; i < end_y + 1; i++) {
@@ -556,6 +556,7 @@ do
                 // this will allow for weighting
                 continue;
             }
+            writeln(["orig.width": orig.width, "orig.height": orig.height, "start_x": start_x, "end_x": end_x, "start_y": start_y, "end_y": end_y, "j":j, "i":i]);
             result ~= orig.get(j,i);
         }
     }
@@ -692,6 +693,7 @@ unittest
 *  
 *  
 * Params:
+*   orig       = original Matrix!T matrix
 *   distance   = how far should be the elements to be picked for averaging
 *   shaper     = function which will pick the elements and shape the window
 *                for example a square window will pick elements in a square with the side 2*distance + 1  
@@ -700,10 +702,11 @@ unittest
 *   
 * Returns: a new matrix the same type and size as the original
 */
-T[] moving_average(T)(
+Matrix!U moving_average(T,U)(
+    Matrix!T orig,
     size_t distance, 
-    T[] function(Matrix!T, size_t, size_t, size_t) shaper = &shaper_square, 
-    T delegate(Matrix!T, size_t, size_t, T[]) calculator = &moving_average_simple_calculator
+    T[] function (Matrix!T, size_t, size_t, size_t) shaper,
+    U function (Matrix!T, size_t, size_t, T[]) calculator
 ) if (isNumeric!T)
 in
 {
@@ -711,28 +714,30 @@ in
 }
 do
 {
-
-    // return Array.from(
-    //     matrix,
-    //     function (row, y) {
-    //         return Array.from(
-    //             row,
-    //             function (item, x) {
-    //                 const slice = resize(
-    //                     matrix,
-    //                     { "x": x - distance, "y": y - distance },
-    //                     { "x": 2*distance + 1, "y": 2*distance + 1 },
-    //                     () => 0, // fill the extra cells with 0s,
-    //                     true // allow cropping
-    //                 )
-    //                 const cells_count = slice.length * slice.length
-    //                 return sum_elements(slice) / cells_count
-    //             }
-    //         )
-    //     }
-    // )
+    auto result = Matrix!U(orig.width, orig.height);
+    for (size_t y = 0; y < orig.height; y++) {
+        for (size_t x = 0; x < orig.width; x++) {
+            auto window = shaper(orig, x, y, distance);
+            U new_element = calculator(orig, x, y, window);
+            result.set(x,y, new_element);
+        }
+    }
 
     return result;
+}
+
+unittest 
+{
+    size_t how_big = 64;
+    auto orig = Matrix!int(random_array!int(64, 0, 255, 12341234), 8);
+    dbg(orig);
+    size_t window_size = 2;
+    auto smooth = orig.moving_average!(int,int)(
+        window_size, 
+        &shaper_square!int, 
+        &moving_average_simple_calculator!(int,int)
+    );
+    dbg(smooth);
 }
 
 ///
