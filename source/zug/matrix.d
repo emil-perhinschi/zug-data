@@ -541,12 +541,17 @@ do
 {
     // close to the left edge
     size_t start_x = x < distance ? 0 : x - distance;
+    
     // close to the top edge
     size_t start_y = y < distance ? 0 : y - distance;
+
     // close to the right edge
-    size_t end_x = distance + x >= orig.width  ? orig.width : x + distance;
+    size_t max_x = orig.width  - 1;
+    size_t end_x = x + distance >= max_x ? max_x : x + distance;
+    
     // close to the bottom edge
-    size_t end_y = distance + y >= orig.height ? orig.height : y + distance;
+    size_t max_y = orig.height - 1;
+    size_t end_y = y + distance >= max_y ? max_y : y + distance;
 
     T[] result;
     for (size_t i = start_y; i < end_y + 1; i++) {
@@ -556,7 +561,7 @@ do
                 // this will allow for weighting
                 continue;
             }
-            writeln(["orig.width": orig.width, "orig.height": orig.height, "start_x": start_x, "end_x": end_x, "start_y": start_y, "end_y": end_y, "j":j, "i":i]);
+            // debug writeln(["orig.width": orig.width, "orig.height": orig.height, "start_x": start_x, "end_x": end_x, "start_y": start_y, "end_y": end_y, "j":j, "i":i]);
             result ~= orig.get(j,i);
         }
     }
@@ -580,6 +585,14 @@ unittest
     assert(larger_window[6] == 1, "changed element in orig is in the expected spot");
     assert(larger_window[7] == 0, "unchanged element in orig is in the expected spot");
     dbg(larger_window, 1, "shaper_square(4,4,2)");
+
+    auto left_top_corner_window = orig.shaper_square(0,0,2);
+    // writeln(left_top_corner_window, " length: ", left_top_corner_window.length, " left_top_corner_window");
+    assert(left_top_corner_window.length == 8);
+
+    auto bottom_right_corner_window = orig.shaper_square(7,7,2);
+    // writeln(bottom_right_corner_window, " length: ", bottom_right_corner_window.length, " bottom_right_corner_window");
+    assert(bottom_right_corner_window.length == 8);
 }
 
 /**
@@ -715,8 +728,10 @@ in
 do
 {
     auto result = Matrix!U(orig.width, orig.height);
+
     for (size_t y = 0; y < orig.height; y++) {
         for (size_t x = 0; x < orig.width; x++) {
+            // debug writeln("x: ", x, " y:", y);
             auto window = shaper(orig, x, y, distance);
             U new_element = calculator(orig, x, y, window);
             result.set(x,y, new_element);
@@ -730,14 +745,17 @@ unittest
 {
     size_t how_big = 64;
     auto orig = Matrix!int(random_array!int(64, 0, 255, 12341234), 8);
-    dbg(orig);
+    dbg(orig,"====================================================");
+
     size_t window_size = 2;
     auto smooth = orig.moving_average!(int,int)(
         window_size, 
         &shaper_square!int, 
         &moving_average_simple_calculator!(int,int)
     );
-    dbg(smooth);
+    assert(smooth.height == orig.height);
+    assert(smooth.width  == orig.width);
+    dbg(smooth, "smoothed with moving average over square window");
 }
 
 ///
@@ -769,6 +787,28 @@ unittest
     // TODO figure out how to check floats, this does not work
     // writeln(result_float);
     // assert(result_float[0] == 5.6181 ); 
+
+    size_t how_big = 64;
+    auto orig = Matrix!int(random_array!int(64, 0, 255, 12341234), 8);
+    
+// should look like this
+//      0    1    2    3    4    5    6    7
+// 0 # [132, 167, 181, 199, 126, 125,  70, 164]
+// 1 # [85,   38,  43, 124, 200,  39, 171,  37]
+// 2 # [140,  10, 207, 106, 229, 176,  73, 206]
+// 3 # [209, 208, 146, 189, 142,  79, 207, 150]
+// 4 # [205, 184,  98, 229, 224, 176,   7,  90]
+// 5 # [221,  12,  97,  69, 237,   8, 218, 199]
+// 6 # [243,   2, 195,  54,  85, 189,  61, 169]
+// 7 # [250, 179, 158, 243, 101,   0,  95, 250]
+    assert(orig.get(0,0) == 132);
+    assert(orig.get(1,1) ==  38);
+    assert(orig.get(1,3) == 208);
+    assert(orig.get(3,1) == 124);
+    assert(orig.get(3,3) == 189);
+    assert(orig.get(3,5) ==  69);
+    assert(orig.get(3,7) == 243);
+    assert(orig.get(5,5) ==   8);
 }
 
 ///
