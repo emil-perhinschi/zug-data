@@ -44,16 +44,6 @@ void dbg(T)(T[][] data, string label = "")
     }
 }
 
-// void dbg(T)(T[] data, string label = "") 
-// {
-//     if (do_debug()) 
-//     {
-//         if (label != "") {
-//             label = "\n# " ~ label;
-//         }
-//         writeln("# ", data);
-//     }
-// }
 
 ///
 void dbg(T)(T[] data, size_t width, string label = "")
@@ -276,15 +266,16 @@ struct Matrix(T) if (isNumeric!T)
     }
 
     ///
-    Matrix!size_t coordinates()
+    Matrix!T coordinates(T)()
+    if (isNumeric!T)
     {
-        Matrix!size_t result = Matrix!size_t(2, this.width * this.height);
+        Matrix!T result = Matrix!T(2, this.width * this.height);
 
         for (size_t i = 0; i < (this.width * this.height); i++)
         {
-            auto modulo = i % this.width;
+            auto modulo = (i % this.width).to!T;
             result.set(0, i, modulo);
-            result.set(1, i, (i - modulo) / this.width);
+            result.set(1, i, ( (i - modulo) / this.width).to!T );
         }
         return result;
     }
@@ -293,7 +284,7 @@ struct Matrix(T) if (isNumeric!T)
     {
         auto orig = Matrix!int([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11], 3);
         dbg(orig, "Matrix 3x4");
-        auto coord = orig.coordinates();
+        auto coord = orig.coordinates!size_t();
         dbg(coord, "coordinates");
 
     }
@@ -445,7 +436,7 @@ struct Matrix(T) if (isNumeric!T)
 
     // TODO 
     /// stretch can only create an enlarged version of the original, else use squeeze (TODO squeeze)
-    Matrix!T stretch(T)(size_t scale_x, size_t scale_y)
+    Matrix!T stretch(T)(float scale_x, float scale_y)
     in
     {
         assert(scale_x >= 1 && scale_y >= 1);
@@ -457,28 +448,44 @@ struct Matrix(T) if (isNumeric!T)
             return this;
         }
 
-        auto coord = this.coordinates();
-        size_t transformation_matrix = [new_size_x, 0, 0, new_size_y];
-        auto new_coords = multiply(coord, transformation_matrix);
+        auto coord = this.coordinates!float();
+        Matrix!float transformation_matrix = Matrix!float([scale_x, 0, 0, scale_y], 2);
+        dbg(transformation_matrix, "transformation_matrix");
+        auto new_coords = coord.multiply!float(transformation_matrix);
+        dbg(new_coords, "new_coords");
 
         for (size_t i; i < new_coords.height; i++)
         {
             // result.set(0,i, )
         }
 
-        return result;
+        Matrix!int placeholder = Matrix!int(6,6);
+        return placeholder;
     }
     /// TODO
     unittest
     {
+        
         auto orig = Matrix!int(3, 3);
+        dbg(orig.coordinates!float, "old_coords");
+        orig.stretch!int(2,2);
+
     }
 }
 
 /// Matrix instantiation
 unittest
 {
-    auto orig = Matrix!int([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11], 3);
+    auto orig = Matrix!int(
+        [
+            0,  1,  2, 
+            3,  4,  5, 
+            6,  7,  8, 
+            9, 10, 11
+        ], 
+        3
+    );
+
     dbg(orig, "Matrix 3x4");
     assert(orig.get(0, 0) == 0, "get 0,0");
     assert(orig.get(1, 1) == 4, "get 1,1");
@@ -823,17 +830,20 @@ do
     size_t height = first.height;
     size_t width = second.width;
     Matrix!T result = Matrix!T(width, height);
-    for (int y = 0; y < height; y++)
+
+    for (size_t y = 0; y < height; y++)
     {
-        for (int x = 0; x < width; x++)
+        for (size_t x = 0; x < width; x++)
         {
             // first.row X second.column
             T[] first_row = first.row(y);
             T[] second_column = second.column(x);
+            T current = 0;
             foreach (size_t i; 0 .. first.width)
             {
-                result.set(x, y, result.get(x, y) + first_row[i] * second_column[i]);
+                current += first_row[i] * second_column[i];
             }
+            result.set(x, y, current);
         }
     }
 
@@ -855,6 +865,23 @@ unittest
     assert(result.get(0, 1) == 139);
     assert(result.get(1, 1) == 154);
 }
+
+/// multiply: float
+unittest
+{
+    auto first = Matrix!float([1, 2, 3, 4, 5, 6], 3);
+    auto second = Matrix!float([7, 8, 9, 10, 11, 12], 2);
+    dbg(first, "multiplied first float");
+    dbg(second, "multiplied second float");
+    auto result = multiply!float(first, second);
+    dbg(result, "multiplied result float");
+
+    assert(result.get(0, 0) == 58);
+    assert(result.get(1, 0) == 64);
+    assert(result.get(0, 1) == 139);
+    assert(result.get(1, 1) == 154);
+}
+
 
 /// add two matrices
 Matrix!T add(T)(Matrix!T first, Matrix!T second)
@@ -889,29 +916,6 @@ unittest
 }
 
 /*
-/// TODO: is this needed ? already have std.algorithm.iteration: sum 
-export function sum_elements(matrix) {
-    let result = 0
-    matrix.forEach(
-        (row) => {
-            result += row.reduce(
-                (row_sum, cell) => {
-                    // can't find a reliable way to determine if a variable
-                    // is numeric, so I'm sticking with the strict option
-                    // which will throw errors even for "1234"
-                    if (isNaN(cell)) {
-                        throw new Error("cell is NaN")
-                    }
-                    if ( Number(cell) !== cell ) {
-                        throw new Error("element " + cell + " is not a number")
-                    }
-                    return Number(row_sum) + Number(cell)
-                }
-            )
-        }
-    )
-    return result
-}
 
 // dfmt off
 int[] data = [
