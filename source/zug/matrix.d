@@ -7,81 +7,6 @@ import std.range : chunks;
 import std.stdio : writeln;
 import std.conv : to;
 
-///
-bool do_debug()
-{
-    import std.process;
-
-    if (environment.get("DEBUG") is null)
-    {
-        return false;
-    }
-
-    int can_debug = environment.get("DEBUG").to!int;
-
-    if (can_debug == 0)
-    {
-        return false;
-    }
-    return true;
-}
-
-///
-void dbg(T)(T[][] data, string label = "")
-{
-    if (do_debug)
-    {
-        if (label != "")
-        {
-            label = "\n# " ~ label;
-        }
-        writeln(label);
-        foreach (T[] row; data)
-        {
-            writeln("# ", row);
-        }
-        writeln();
-    }
-}
-
-
-///
-void dbg(T)(T[] data, size_t width, string label = "")
-{
-    if (do_debug())
-    {
-        if (label != "")
-        {
-            label = "\n# " ~ label;
-        }
-        writeln(label);
-        auto chunked = data.chunks(width);
-        foreach (T[] row; chunked)
-        {
-            writeln("# ", row);
-        }
-        writeln();
-    }
-}
-
-///
-void dbg(T)(Matrix!T orig, string label = "")
-{
-    if (do_debug())
-    {
-        if (label != "")
-        {
-            label = "\n# " ~ label;
-        }
-        writeln(label);
-        auto chunked = orig.data.chunks(orig.width);
-        foreach (T[] row; chunked)
-        {
-            writeln("# ", row);
-        }
-        writeln();
-    }
-}
 
 ///
 struct Offset
@@ -223,6 +148,11 @@ struct Matrix(T) if (isNumeric!T)
         assert(result.get(5) == 0);
         assert(result.get(6) == 0);
         assert(result.get(7) == 1);
+
+        auto small = orig.dice!int(Offset(0, 0), 2, 2);
+        dbg( small, "2x2 dice" );
+        assert(small.height == 2);
+        assert(small.width == 2);
     }
 
     ///
@@ -434,6 +364,7 @@ struct Matrix(T) if (isNumeric!T)
         assert(result.get(4) == 7);
     }
 
+
     // TODO 
     /// stretch can only create an enlarged version of the original, else use squeeze (TODO squeeze)
     Matrix!T stretch(T)(float scale_x, float scale_y)
@@ -445,7 +376,7 @@ struct Matrix(T) if (isNumeric!T)
     {
         if (scale_x == 1 && scale_y == 1)
         {
-            return this;
+            this.copy();
         }
 
         auto coord = this.coordinates!float();
@@ -470,6 +401,27 @@ struct Matrix(T) if (isNumeric!T)
         dbg(orig.coordinates!float, "old_coords");
         orig.stretch!int(2,2);
 
+    }
+
+    Matrix!T copy() {
+        return Matrix!T(this.data.dup, this.width);
+    }
+
+    unittest 
+    {
+        auto orig = Matrix!float([0,1,2,3,4,5],3);
+        auto copy = orig.copy();
+        dbg(copy, "copy before modified");
+
+        for (size_t i = 0; i < orig.data_length; i++) {
+            assert( orig.get(i) == copy.get(i));
+        }
+
+        copy.set(0,0,1000);
+        dbg(copy, "copy modified");
+        dbg(orig, "copy orig");
+
+        assert( orig.get(0,0) != copy.get(0,0));
     }
 }
 
@@ -535,7 +487,7 @@ unittest
 
 * Returns: an array of elements picked, not including the current element
 */
-// TODO unittest
+
 T[] shaper_square(T)(Matrix!T orig, size_t x, size_t y, size_t distance)
         if (isNumeric!T)
 in
@@ -915,6 +867,38 @@ unittest
     assert(result.get(3) == 10);
 }
 
+/// SEEME: nearest neighbour interpolation 
+// returns a new matrix 
+// Matrix!T enlarge(T)(Matrix!T orig, int scale_x, int scale_y) 
+// if (isNumeric!T)
+// init
+// {
+//     assert(scale_x > 0);
+//     assert(scale_y > 0);
+// }
+// do
+// {
+
+//     // TODO not good, need more thinking or more sleep
+//     int new_width =  orig.width * scale_x;
+//     int new_height = orig.height * scale_y;
+//     T[] new_data = new T[new_width * new_height];
+
+//     for (int y = 0; y < orig.height; y++) 
+//     {
+//         for (int x = 0; x < orig.width; x++) 
+//         {
+//             int start_x = y * new_width;
+//             new_data[x .. x + scale_x - 1 ] = orig.get(x,y);
+//         }
+//     }
+// }
+
+// unittest 
+// {
+//     auto orig = Matrix!int( random_array(16, 0, 16, 12341234), 16 );
+// }
+
 /*
 
 // dfmt off
@@ -1195,3 +1179,86 @@ private T[] sample_2d_array(T)() if (isNumeric!T)
     // dfmt on
     return data;
 }
+
+
+
+/** 
+    Debuging helpers, should move to another module 
+*/
+
+///
+bool do_debug()
+{
+    import std.process;
+
+    if (environment.get("DEBUG") is null)
+    {
+        return false;
+    }
+
+    int can_debug = environment.get("DEBUG").to!int;
+
+    if (can_debug == 0)
+    {
+        return false;
+    }
+    return true;
+}
+
+///
+void dbg(T)(T[][] data, string label = "")
+{
+    if (do_debug)
+    {
+        if (label != "")
+        {
+            label = "\n# " ~ label;
+        }
+        writeln(label);
+        foreach (T[] row; data)
+        {
+            writeln("# ", row);
+        }
+        writeln();
+    }
+}
+
+
+///
+void dbg(T)(T[] data, size_t width, string label = "")
+{
+    if (do_debug())
+    {
+        if (label != "")
+        {
+            label = "\n# " ~ label;
+        }
+        writeln(label);
+        auto chunked = data.chunks(width);
+        foreach (T[] row; chunked)
+        {
+            writeln("# ", row);
+        }
+        writeln();
+    }
+}
+
+///
+void dbg(T)(Matrix!T orig, string label = "")
+{
+    if (do_debug())
+    {
+        if (label != "")
+        {
+            label = "\n# " ~ label;
+        }
+        writeln(label);
+        auto chunked = orig.data.chunks(orig.width);
+        foreach (T[] row; chunked)
+        {
+            writeln("# ", row);
+        }
+        writeln();
+    }
+}
+
