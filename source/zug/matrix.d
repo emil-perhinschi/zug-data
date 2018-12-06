@@ -867,37 +867,62 @@ unittest
     assert(result.get(3) == 10);
 }
 
-/// SEEME: nearest neighbour interpolation 
-// returns a new matrix 
-// Matrix!T enlarge(T)(Matrix!T orig, int scale_x, int scale_y) 
-// if (isNumeric!T)
-// init
-// {
-//     assert(scale_x > 0);
-//     assert(scale_y > 0);
-// }
-// do
-// {
+/// SEEME: is this nearest neighbour interpolation ?
+// returns a new matrix, does not change the old
+Matrix!T enlarge(T)(Matrix!T orig, int scale_x, int scale_y) 
+if (isNumeric!T)
+in
+{
+    assert(scale_x > 0);
+    assert(scale_y > 0);
+}
+do
+{
 
-//     // TODO not good, need more thinking or more sleep
-//     int new_width =  orig.width * scale_x;
-//     int new_height = orig.height * scale_y;
-//     T[] new_data = new T[new_width * new_height];
+    size_t new_width =  orig.width * scale_x;
+    size_t new_height = orig.height * scale_y;
+    auto result = Matrix!T( new_width, new_height );
 
-//     for (int y = 0; y < orig.height; y++) 
-//     {
-//         for (int x = 0; x < orig.width; x++) 
-//         {
-//             int start_x = y * new_width;
-//             new_data[x .. x + scale_x - 1 ] = orig.get(x,y);
-//         }
-//     }
-// }
+    size_t full_length = new_width * new_height;
+    for (size_t i = 0; i < full_length; i++) 
+    {
+        auto orig_x = ( i % new_width ) / scale_x;  // SEEME .to!size_t ??
+        auto orig_y = ( i / new_width ) / scale_y; // SEEME .to!size_t ??
+        result.set(i, orig.get(orig_x, orig_y));
+    }
 
-// unittest 
-// {
-//     auto orig = Matrix!int( random_array(16, 0, 16, 12341234), 16 );
-// }
+    return result;
+}
+
+unittest
+{
+    // orig 
+    // [ 6,  3, 12, 14]
+    // [10,  7, 12,  4]
+    // [ 6,  9,  2,  6]
+    // [10, 10,  7,  4]
+    auto orig = Matrix!int( random_array(16, 0, 16, 12341234), 4 );
+    dbg(orig, "orig enlarge");
+    auto larger = orig.enlarge(2,2);
+    dbg( larger, "larger enlarge");
+
+    // dfmt off 
+    int[] expected_data = [ 
+        6,  6,  3,  3, 12, 12, 14, 14,
+        6,  6,  3,  3, 12, 12, 14, 14,
+       10, 10,  7,  7, 12, 12,  4,  4,
+       10, 10,  7,  7, 12, 12,  4,  4,
+        6,  6,  9,  9,  2,  2,  6,  6,
+        6,  6,  9,  9,  2,  2,  6,  6,
+       10, 10, 10, 10,  7,  7,  4,  4,
+       10, 10, 10, 10,  7,  7,  4,  4
+    ];
+    // dfmt on
+
+    import std.algorithm.comparison: equal;
+    assert(equal( larger.data, expected_data) );
+
+}
 
 /*
 
