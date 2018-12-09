@@ -15,10 +15,21 @@ struct Offset
     size_t y;
 }
 
+struct RGBCell(T) 
+if (isNumeric!T) 
+{
+    t red = 0;
+    t green = 0;
+    t blue = 0; 
+}
+
 ///
 alias CoordinatesMatrix = size_t[];
 
+
 ///
+// TODO: functions which give info about the matrix or modify the matrix should stay in the class as methods
+// TODO: functions which create new stuff based on the matrix should stay out and be called via UFCS 
 struct Matrix(T) if (isNumeric!T)
 {
 
@@ -922,6 +933,77 @@ unittest
     import std.algorithm.comparison: equal;
     assert(equal( larger.data, expected_data) );
 
+    auto larger_still = orig.enlarge(3,3);
+    dbg(larger_still, "larger_still enlarge");
+
+}
+
+
+T[] stretch_row(T)( T[] orig, size_t new_size ) {
+
+    double spacing = ( (new_size.to!double - 1)/( orig.length.to!double - 1 ) );
+    writeln( [ "new_size" : new_size, "orig.length:": orig.length, "spacing:": spacing ], "spacing" );
+    double[] stretched_coordinates = new double[orig.length];
+    for (size_t i = 0; i < orig.length; i++) {
+        stretched_coordinates[i] = i.to!double * spacing;
+    }
+
+    writeln(stretched_coordinates, "================================= stretch_row ");
+
+    // deal with floating point weirdnesses, make sure the last value is what
+    //   it should be
+    stretched_coordinates[stretched_coordinates.length -1] = new_size - 1;
+
+    // let orig_coordinates = 0
+    // let next_coordinates = stretched_coordinates[orig_coordinates]
+    // let prev_coordinates = 0
+    // const stretched = Array.from(
+    //     Array(new_size),
+    //     function(undef, i) {
+
+    //         if (
+    //             // less than the fractional part
+    //             next_coordinates - i <= (next_coordinates % 1)
+    //         ) {
+    //             const value = orig[orig_coordinates]
+    //             prev_coordinates = next_coordinates
+    //             orig_coordinates += 1
+    //             next_coordinates = stretched_coordinates[orig_coordinates]
+    //             return value
+    //         } else {
+    //             const slope =
+    //                 Number(orig[orig_coordinates] - orig[orig_coordinates - 1])
+    //                 /
+    //                 Number(next_coordinates - prev_coordinates)
+
+    //             if(isNaN(slope)) {
+    //                 console.error("xxx slope is NaN", i, orig_coordinates, orig)
+    //                 throw new Error("something very wrong: slope is NaN")
+
+    //             }
+
+    //             const value =  Number(orig[orig_coordinates - 1])
+    //                 + Number( slope * (i - prev_coordinates) )
+
+    //             if(isNaN(value)) {
+    //                 console.error("yyy isNaN", i, slope, orig[orig_coordinates - 1], prev_coordinates, orig)
+    //                 throw new Error("something very wrong: value is NaN")
+    //             }
+    //             return value
+    //         }
+    //     }
+    // )
+    // return stretched
+
+    T[] result;
+    return result;
+}
+
+unittest
+{
+    int[] orig = [0,1,2,3,4,5];
+    auto result = stretch_row(orig, 33);
+    
 }
 
 /*
