@@ -7,7 +7,6 @@ import std.range : chunks;
 import std.stdio : writeln;
 import std.conv : to;
 
-
 ///
 struct Offset
 {
@@ -15,17 +14,15 @@ struct Offset
     size_t y;
 }
 
-struct RGBCell(T) 
-if (isNumeric!T) 
+struct RGBCell(T) if (isNumeric!T)
 {
     t red = 0;
     t green = 0;
-    t blue = 0; 
+    t blue = 0;
 }
 
 ///
 alias CoordinatesMatrix = size_t[];
-
 
 ///
 // TODO: functions which give info about the matrix or modify the matrix should stay in the class as methods
@@ -161,7 +158,7 @@ struct Matrix(T) if (isNumeric!T)
         assert(result.get(7) == 1);
 
         auto small = orig.dice!int(Offset(0, 0), 2, 2);
-        dbg( small, "2x2 dice" );
+        dbg(small, "2x2 dice");
         assert(small.height == 2);
         assert(small.width == 2);
     }
@@ -207,8 +204,7 @@ struct Matrix(T) if (isNumeric!T)
     }
 
     ///
-    Matrix!T coordinates(T)()
-    if (isNumeric!T)
+    Matrix!T coordinates(T)() if (isNumeric!T)
     {
         Matrix!T result = Matrix!T(2, this.width * this.height);
 
@@ -216,7 +212,7 @@ struct Matrix(T) if (isNumeric!T)
         {
             auto modulo = (i % this.width).to!T;
             result.set(0, i, modulo);
-            result.set(1, i, ( (i - modulo) / this.width).to!T );
+            result.set(1, i, ((i - modulo) / this.width).to!T);
         }
         return result;
     }
@@ -375,79 +371,34 @@ struct Matrix(T) if (isNumeric!T)
         assert(result.get(4) == 7);
     }
 
-
-    // TODO 
-    /// stretch can only create an enlarged version of the original, else use squeeze (TODO squeeze)
-    Matrix!T stretch(T)(float scale_x, float scale_y)
-    in
+    Matrix!T copy()
     {
-        assert(scale_x >= 1 && scale_y >= 1);
-    }
-    do
-    {
-        if (scale_x == 1 && scale_y == 1)
-        {
-            this.copy();
-        }
-
-        auto coord = this.coordinates!float();
-        Matrix!float transformation_matrix = Matrix!float([scale_x, 0, 0, scale_y], 2);
-        dbg(transformation_matrix, "transformation_matrix");
-        auto new_coords = coord.multiply!float(transformation_matrix);
-        dbg(new_coords, "new_coords");
-
-        for (size_t i; i < new_coords.height; i++)
-        {
-            // result.set(0,i, )
-        }
-
-        Matrix!int placeholder = Matrix!int(6,6);
-        return placeholder;
-    }
-    /// TODO
-    unittest
-    {
-        
-        auto orig = Matrix!int(3, 3);
-        dbg(orig.coordinates!float, "old_coords");
-        orig.stretch!int(2,2);
-
-    }
-
-    Matrix!T copy() {
         return Matrix!T(this.data.dup, this.width);
     }
 
-    unittest 
+    unittest
     {
-        auto orig = Matrix!float([0,1,2,3,4,5],3);
+        auto orig = Matrix!float([0, 1, 2, 3, 4, 5], 3);
         auto copy = orig.copy();
         dbg(copy, "copy before modified");
 
-        for (size_t i = 0; i < orig.data_length; i++) {
-            assert( orig.get(i) == copy.get(i));
+        for (size_t i = 0; i < orig.data_length; i++)
+        {
+            assert(orig.get(i) == copy.get(i));
         }
 
-        copy.set(0,0,1000);
+        copy.set(0, 0, 1000);
         dbg(copy, "copy modified");
         dbg(orig, "copy orig");
 
-        assert( orig.get(0,0) != copy.get(0,0));
+        assert(orig.get(0, 0) != copy.get(0, 0));
     }
 }
 
 /// Matrix instantiation
 unittest
 {
-    auto orig = Matrix!int(
-        [
-            0,  1,  2, 
-            3,  4,  5, 
-            6,  7,  8, 
-            9, 10, 11
-        ], 
-        3
-    );
+    auto orig = Matrix!int([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11], 3);
 
     dbg(orig, "Matrix 3x4");
     assert(orig.get(0, 0) == 0, "get 0,0");
@@ -511,28 +462,31 @@ do
 {
     // close to the left edge
     size_t start_x = x < distance ? 0 : x - distance;
-    
+
     // close to the top edge
     size_t start_y = y < distance ? 0 : y - distance;
 
     // close to the right edge
-    size_t max_x = orig.width  - 1;
+    size_t max_x = orig.width - 1;
     size_t end_x = x + distance >= max_x ? max_x : x + distance;
-    
+
     // close to the bottom edge
     size_t max_y = orig.height - 1;
     size_t end_y = y + distance >= max_y ? max_y : y + distance;
 
     T[] result;
-    for (size_t i = start_y; i < end_y + 1; i++) {
-        for (size_t j = start_x; j < end_x + 1; j++) {
-            if (i == y && j == x) {
+    for (size_t i = start_y; i < end_y + 1; i++)
+    {
+        for (size_t j = start_x; j < end_x + 1; j++)
+        {
+            if (i == y && j == x)
+            {
                 // don't add the element around which the window is built
                 // this will allow for weighting
                 continue;
             }
             // debug writeln(["orig.width": orig.width, "orig.height": orig.height, "start_x": start_x, "end_x": end_x, "start_y": start_y, "end_y": end_y, "j":j, "i":i]);
-            result ~= orig.get(j,i);
+            result ~= orig.get(j, i);
         }
     }
     return result;
@@ -540,27 +494,27 @@ do
 
 unittest
 {
-    Matrix!int orig = Matrix!int(8,8);
+    Matrix!int orig = Matrix!int(8, 8);
     // change one element, enable testing if it is in the right position
     orig.set(3, 3, 1);
-    auto window = orig.shaper_square(4,4,1);
+    auto window = orig.shaper_square(4, 4, 1);
 
-    dbg(window,1, "shaper_square(4,4,1)");
+    dbg(window, 1, "shaper_square(4,4,1)");
     assert(window.length == 8, "got 8 elements in the window");
     assert(window[0] == 1, "changed element in orig is in the expected spot");
     assert(window[1] == 0, "unchanged element in orig is in the expected spot");
 
-    auto larger_window = orig.shaper_square(4,4,2);
+    auto larger_window = orig.shaper_square(4, 4, 2);
     assert(larger_window.length == 24, "got 24 elements in the larger window");
     assert(larger_window[6] == 1, "changed element in orig is in the expected spot");
     assert(larger_window[7] == 0, "unchanged element in orig is in the expected spot");
     dbg(larger_window, 1, "shaper_square(4,4,2)");
 
-    auto left_top_corner_window = orig.shaper_square(0,0,2);
+    auto left_top_corner_window = orig.shaper_square(0, 0, 2);
     // writeln(left_top_corner_window, " length: ", left_top_corner_window.length, " left_top_corner_window");
     assert(left_top_corner_window.length == 8);
 
-    auto bottom_right_corner_window = orig.shaper_square(7,7,2);
+    auto bottom_right_corner_window = orig.shaper_square(7, 7, 2);
     // writeln(bottom_right_corner_window, " length: ", bottom_right_corner_window.length, " bottom_right_corner_window");
     assert(bottom_right_corner_window.length == 8);
 }
@@ -593,28 +547,32 @@ in
 }
 do
 {
-    import std.math: sqrt, round;
+    import std.math : sqrt, round;
 
     // close to the left edge
     size_t start_x = x < distance ? 0 : x - distance;
     // close to the top edge
     size_t start_y = y < distance ? 0 : y - distance;
     // close to the right edge
-    size_t end_x = distance + x > orig.width  ? orig.width : x + distance;
+    size_t end_x = distance + x > orig.width ? orig.width : x + distance;
     // close to the bottom edge
     size_t end_y = distance + y > orig.height ? orig.height : y + distance;
 
     T[] result;
-    for (size_t i = start_y; i < end_y + 1; i++) {
-        for (size_t j = start_x; j < end_x + 1; j++) {
-            if (i == y && j == x) {
+    for (size_t i = start_y; i < end_y + 1; i++)
+    {
+        for (size_t j = start_x; j < end_x + 1; j++)
+        {
+            if (i == y && j == x)
+            {
                 // don't add the element around which the window is built
                 // this will allow for weighting
                 continue;
             }
-            real how_far = sqrt( ((x - j)*(x - j) + (y - i)*(y - i) ).to!real );
-            if (round(how_far) <= distance) {
-                result ~= orig.get(j,i);
+            real how_far = sqrt(((x - j) * (x - j) + (y - i) * (y - i)).to!real);
+            if (round(how_far) <= distance)
+            {
+                result ~= orig.get(j, i);
             }
         }
     }
@@ -623,12 +581,12 @@ do
 
 unittest
 {
-    Matrix!int orig = Matrix!int(8,8);
+    Matrix!int orig = Matrix!int(8, 8);
     // change one element, enable testing if it is in the right position
     orig.set(3, 3, 1);
-    auto window = orig.shaper_circle(4,4,2);
+    auto window = orig.shaper_circle(4, 4, 2);
 
-    dbg(window,1, "shaper_circle(4,4,2)");
+    dbg(window, 1, "shaper_circle(4,4,2)");
     assert(window.length == 20, "got 8 elements in the window");
     assert(window[4] == 1, "changed element in orig is in the expected spot");
     assert(window[1] == 0, "unchanged element in orig is in the expected spot");
@@ -646,28 +604,32 @@ unittest
 *  Returns: a number of the type U specified when calling the function
 */
 U moving_average_simple_calculator(U, T)(Matrix!T orig, size_t x, size_t y, T[] window)
-if (isNumeric!T) 
+        if (isNumeric!T)
 {
-    import std.algorithm.iteration: sum;
-    auto total = orig.get(x,y) + window.sum;
+    import std.algorithm.iteration : sum;
+
+    auto total = orig.get(x, y) + window.sum;
     auto count = window.length.to!T + 1;
-    
-    static if ( is(U == T) ) {
-        return total/count;
+
+    static if (is(U == T))
+    {
+        return total / count;
     }
-    else {
-        return total.to!U/count.to!U;
+    else
+    {
+        return total.to!U / count.to!U;
     }
 }
-unittest 
+
+unittest
 {
-    auto orig = Matrix!int(3,3);
+    auto orig = Matrix!int(3, 3);
     size_t x = 1;
     size_t y = 1;
     orig.set(x, y, 1);
     int[] window = [2, 2, 2];
 
-    auto result = orig.moving_average_simple_calculator!(float,int)(x, y, window);
+    auto result = orig.moving_average_simple_calculator!(float, int)(x, y, window);
     assert(result == 1.75, "simple average of 2,2,2 and 1 is 1.75 as expected");
 }
 
@@ -685,12 +647,9 @@ unittest
 *   
 * Returns: a new matrix the same type and size as the original
 */
-Matrix!U moving_average(T,U)(
-    Matrix!T orig,
-    size_t distance, 
-    T[] function (Matrix!T, size_t, size_t, size_t) shaper,
-    U function (Matrix!T, size_t, size_t, T[]) calculator
-) if (isNumeric!T)
+Matrix!U moving_average(T, U)(Matrix!T orig, size_t distance,
+        T[]function(Matrix!T, size_t, size_t, size_t) shaper,
+        U function(Matrix!T, size_t, size_t, T[]) calculator) if (isNumeric!T)
 in
 {
     assert(distance >= 0);
@@ -699,32 +658,31 @@ do
 {
     auto result = Matrix!U(orig.width, orig.height);
 
-    for (size_t y = 0; y < orig.height; y++) {
-        for (size_t x = 0; x < orig.width; x++) {
+    for (size_t y = 0; y < orig.height; y++)
+    {
+        for (size_t x = 0; x < orig.width; x++)
+        {
             // debug writeln("x: ", x, " y:", y);
             auto window = shaper(orig, x, y, distance);
             U new_element = calculator(orig, x, y, window);
-            result.set(x,y, new_element);
+            result.set(x, y, new_element);
         }
     }
 
     return result;
 }
 
-unittest 
+unittest
 {
     size_t how_big = 64;
     auto orig = Matrix!int(random_array!int(64, 0, 255, 12341234), 8);
-    dbg(orig,"====================================================");
+    dbg(orig, "====================================================");
 
     size_t window_size = 2;
-    auto smooth = orig.moving_average!(int,int)(
-        window_size, 
-        &shaper_square!int, 
-        &moving_average_simple_calculator!(int,int)
-    );
+    auto smooth = orig.moving_average!(int, int)(window_size,
+            &shaper_square!int, &moving_average_simple_calculator!(int, int));
     assert(smooth.height == orig.height);
-    assert(smooth.width  == orig.width);
+    assert(smooth.width == orig.width);
     dbg(smooth, "smoothed with moving average over square window");
 }
 
@@ -760,25 +718,25 @@ unittest
 
     size_t how_big = 64;
     auto orig = Matrix!int(random_array!int(64, 0, 255, 12341234), 8);
-    
-// should look like this
-//      0    1    2    3    4    5    6    7
-// 0 # [132, 167, 181, 199, 126, 125,  70, 164]
-// 1 # [85,   38,  43, 124, 200,  39, 171,  37]
-// 2 # [140,  10, 207, 106, 229, 176,  73, 206]
-// 3 # [209, 208, 146, 189, 142,  79, 207, 150]
-// 4 # [205, 184,  98, 229, 224, 176,   7,  90]
-// 5 # [221,  12,  97,  69, 237,   8, 218, 199]
-// 6 # [243,   2, 195,  54,  85, 189,  61, 169]
-// 7 # [250, 179, 158, 243, 101,   0,  95, 250]
-    assert(orig.get(0,0) == 132);
-    assert(orig.get(1,1) ==  38);
-    assert(orig.get(1,3) == 208);
-    assert(orig.get(3,1) == 124);
-    assert(orig.get(3,3) == 189);
-    assert(orig.get(3,5) ==  69);
-    assert(orig.get(3,7) == 243);
-    assert(orig.get(5,5) ==   8);
+
+    // should look like this
+    //      0    1    2    3    4    5    6    7
+    // 0 # [132, 167, 181, 199, 126, 125,  70, 164]
+    // 1 # [85,   38,  43, 124, 200,  39, 171,  37]
+    // 2 # [140,  10, 207, 106, 229, 176,  73, 206]
+    // 3 # [209, 208, 146, 189, 142,  79, 207, 150]
+    // 4 # [205, 184,  98, 229, 224, 176,   7,  90]
+    // 5 # [221,  12,  97,  69, 237,   8, 218, 199]
+    // 6 # [243,   2, 195,  54,  85, 189,  61, 169]
+    // 7 # [250, 179, 158, 243, 101,   0,  95, 250]
+    assert(orig.get(0, 0) == 132);
+    assert(orig.get(1, 1) == 38);
+    assert(orig.get(1, 3) == 208);
+    assert(orig.get(3, 1) == 124);
+    assert(orig.get(3, 3) == 189);
+    assert(orig.get(3, 5) == 69);
+    assert(orig.get(3, 7) == 243);
+    assert(orig.get(5, 5) == 8);
 }
 
 ///
@@ -845,7 +803,6 @@ unittest
     assert(result.get(1, 1) == 154);
 }
 
-
 /// add two matrices
 Matrix!T add(T)(Matrix!T first, Matrix!T second)
 {
@@ -880,8 +837,7 @@ unittest
 
 /// SEEME: is this nearest neighbour interpolation ?
 // returns a new matrix, does not change the old
-Matrix!T enlarge(T)(Matrix!T orig, int scale_x, int scale_y) 
-if (isNumeric!T)
+Matrix!T enlarge(T)(Matrix!T orig, int scale_x, int scale_y) if (isNumeric!T)
 in
 {
     assert(scale_x > 0);
@@ -890,15 +846,15 @@ in
 do
 {
 
-    size_t new_width =  orig.width * scale_x;
+    size_t new_width = orig.width * scale_x;
     size_t new_height = orig.height * scale_y;
-    auto result = Matrix!T( new_width, new_height );
+    auto result = Matrix!T(new_width, new_height);
 
     size_t full_length = new_width * new_height;
-    for (size_t i = 0; i < full_length; i++) 
+    for (size_t i = 0; i < full_length; i++)
     {
-        auto orig_x = ( i % new_width ) / scale_x;  // SEEME .to!size_t ??
-        auto orig_y = ( i / new_width ) / scale_y; // SEEME .to!size_t ??
+        auto orig_x = (i % new_width) / scale_x; // SEEME .to!size_t ??
+        auto orig_y = (i / new_width) / scale_y; // SEEME .to!size_t ??
         result.set(i, orig.get(orig_x, orig_y));
     }
 
@@ -912,10 +868,10 @@ unittest
     // [10,  7, 12,  4]
     // [ 6,  9,  2,  6]
     // [10, 10,  7,  4]
-    auto orig = Matrix!int( random_array(16, 0, 16, 12341234), 4 );
+    auto orig = Matrix!int(random_array(16, 0, 16, 12341234), 4);
     dbg(orig, "orig enlarge");
-    auto larger = orig.enlarge(2,2);
-    dbg( larger, "larger enlarge");
+    auto larger = orig.enlarge(2, 2);
+    dbg(larger, "larger enlarge");
 
     // dfmt off 
     int[] expected_data = [ 
@@ -930,51 +886,57 @@ unittest
     ];
     // dfmt on
 
-    import std.algorithm.comparison: equal;
-    assert(equal( larger.data, expected_data) );
+    import std.algorithm.comparison : equal;
 
-    auto larger_still = orig.enlarge(3,3);
+    assert(equal(larger.data, expected_data));
+
+    auto larger_still = orig.enlarge(3, 3);
     dbg(larger_still, "larger_still enlarge");
 
 }
 
+T[] stretch_row(T)(T[] orig, size_t new_size)
+{
 
-T[] stretch_row(T)( T[] orig, size_t new_size ) {
-
-    double spacing = ( (new_size.to!double - 1)/( orig.length.to!double - 1 ) );
+    double spacing = ((new_size.to!double - 1) / (orig.length.to!double - 1));
     double[] stretched_coordinates = new double[orig.length];
-    for (size_t i = 0; i < orig.length; i++) {
+    for (size_t i = 0; i < orig.length; i++)
+    {
         stretched_coordinates[i] = i.to!double * spacing;
     }
 
     // deal with floating point weirdnesses, make sure the last value is what it should be
-    stretched_coordinates[stretched_coordinates.length -1] = new_size - 1;
+    stretched_coordinates[stretched_coordinates.length - 1] = new_size - 1;
 
     size_t orig_coordinates = 0;
     double next_coordinates = stretched_coordinates[orig_coordinates];
     double prev_coordinates = 0;
     T[] stretched = new T[new_size];
 
-    for (size_t i = 0; i < new_size; i++) {
+    for (size_t i = 0; i < new_size; i++)
+    {
         auto blabla = next_coordinates % 1;
-        if (
-            next_coordinates - i <= (next_coordinates % 1)
-        ) {
+        if (next_coordinates - i <= (next_coordinates % 1))
+        {
             stretched[i] = orig[orig_coordinates];
             prev_coordinates = next_coordinates;
             orig_coordinates += 1;
-            if (orig_coordinates < stretched_coordinates.length) {
+            if (orig_coordinates < stretched_coordinates.length)
+            {
                 next_coordinates = stretched_coordinates[orig_coordinates];
-            } else {
+            }
+            else
+            {
                 break;
             }
-        } else {
-            double slope =
-                (orig[orig_coordinates] - orig[orig_coordinates - 1]).to!double
-                /
-                (next_coordinates - prev_coordinates);
+        }
+        else
+        {
+            double slope = (orig[orig_coordinates] - orig[orig_coordinates - 1]).to!double / (
+                    next_coordinates - prev_coordinates);
 
-            double value =  orig[orig_coordinates - 1].to!double + ( slope * (i - prev_coordinates) ).to!double;
+            double value = orig[orig_coordinates - 1].to!double + (slope * (i - prev_coordinates))
+                .to!double;
 
             stretched[i] = value.to!T;
         }
@@ -985,11 +947,12 @@ T[] stretch_row(T)( T[] orig, size_t new_size ) {
 
 unittest
 {
-    import std.algorithm.comparison: equal;
-    float[] orig = [0,1,2,3,4];
+    import std.algorithm.comparison : equal;
+
+    float[] orig = [0, 1, 2, 3, 4];
     auto result = stretch_row(orig, 15);
     // expected [0, 0.285714, 0.571429, 1, 1.14286, 1.42857, 1.71429, 2, 2.28571, 2.57143, 3, 3.14286, 3.42857, 3.71429, 4]
-    // assert(result.equal(expected));
+    // assert(result.equal(expected)); ... floats will be floats :-/
     // writeln("result", result);
     assert(result.length == 15);
     assert(result[0] == orig[0]);
@@ -997,6 +960,56 @@ unittest
     assert(result[7] == orig[2]);
     assert(result[10] == orig[3]);
     assert(result[14] == orig[4]);
+}
+
+unittest
+{
+    import std.algorithm.comparison : equal;
+
+    int[] orig = [0, 25, 75, 0, 255];
+    int[] result = stretch_row(orig, 15);
+    int[] expected = [0, 7, 14, 25, 32, 46, 60, 75, 53, 32, 0, 36, 109, 182, 255];
+    assert(result.equal(expected));
+    writeln("result", result);
+}
+
+
+// TODO 
+/// stretch can only create an enlarged version of the original, else use squeeze (TODO squeeze)
+Matrix!T stretch(T)(Matrix!T orig, float scale_x, float scale_y)
+in
+{
+    assert(scale_x >= 1 && scale_y >= 1);
+}
+do
+{
+    if (scale_x == 1 && scale_y == 1)
+    {
+        return orig.copy();
+    }
+
+    auto coord = orig.coordinates!float();
+    Matrix!float transformation_matrix = Matrix!float([scale_x, 0, 0, scale_y], 2);
+    dbg(transformation_matrix, "transformation_matrix");
+    auto new_coords = coord.multiply!float(transformation_matrix);
+    dbg(new_coords, "new_coords");
+
+    for (size_t i; i < new_coords.height; i++)
+    {
+        // result.set(0,i, )
+    }
+
+    Matrix!int placeholder = Matrix!int(6, 6);
+    return placeholder;
+}
+/// TODO
+unittest
+{
+
+    auto orig = Matrix!int(3, 3);
+    dbg(orig.coordinates!float, "old_coords");
+    orig.stretch!int(2, 2);
+
 }
 
 /*
@@ -1252,8 +1265,7 @@ export function enlarge(orig, new_width, new_height) {
 
 */
 
-
-private T[] sample_2d_array(T)() if (isNumeric!T) 
+private T[] sample_2d_array(T)() if (isNumeric!T)
 {
     // dfmt off
     T[] data = [
@@ -1279,8 +1291,6 @@ private T[] sample_2d_array(T)() if (isNumeric!T)
     // dfmt on
     return data;
 }
-
-
 
 /** 
     Debuging helpers, should move to another module 
@@ -1323,7 +1333,6 @@ void dbg(T)(T[][] data, string label = "")
     }
 }
 
-
 ///
 void dbg(T)(T[] data, size_t width, string label = "")
 {
@@ -1361,4 +1370,3 @@ void dbg(T)(Matrix!T orig, string label = "")
         writeln();
     }
 }
-
