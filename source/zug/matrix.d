@@ -970,7 +970,6 @@ unittest
     int[] result = stretch_row(orig, 15);
     int[] expected = [0, 7, 14, 25, 32, 46, 60, 75, 53, 32, 0, 36, 109, 182, 255];
     assert(result.equal(expected));
-    writeln("result", result);
 }
 
 
@@ -988,28 +987,42 @@ do
         return orig.copy();
     }
 
-    auto coord = orig.coordinates!float();
+    size_t new_width  = ( orig.width  * scale_x ).to!size_t;
+    size_t new_height = ( orig.height * scale_y ).to!size_t;
+
+    writeln("orig:", orig.width, "x", orig.height, " new_height:", new_height, " new_width: ", new_width);
+    
+    Matrix!T result = Matrix!T(new_width, new_height);
+
+    auto coords = orig.coordinates!float();
     Matrix!float transformation_matrix = Matrix!float([scale_x, 0, 0, scale_y], 2);
-    dbg(transformation_matrix, "transformation_matrix");
-    auto new_coords = coord.multiply!float(transformation_matrix);
+    writeln(transformation_matrix, "transformation_matrix");
+    auto new_coords = coords.multiply!float(transformation_matrix);
     dbg(new_coords, "new_coords");
 
+    // coords and new_coords are Matrix!size_t instances with width == 2
     for (size_t i; i < new_coords.height; i++)
     {
-        // result.set(0,i, )
+        auto old_x = coords.get( i * 2 ).to!size_t;
+        auto old_y = coords.get( i * 2 + 1).to!size_t;
+        auto new_x = new_coords.get( i * 2 ).to!size_t;
+        auto new_y = new_coords.get( i * 2 + 1).to!size_t;
+        auto orig_value = orig.get(old_x, old_y);
+        result.set(new_x, new_y, orig_value);
     }
 
-    Matrix!int placeholder = Matrix!int(6, 6);
-    return placeholder;
+    return result;
 }
+
+
 /// TODO
 unittest
 {
 
-    auto orig = Matrix!int(3, 3);
+    auto orig = Matrix!int([0, 5, 10, 15, 20, 25, 30, 35, 40], 3);
     dbg(orig.coordinates!float, "old_coords");
-    orig.stretch!int(2, 2);
-
+    auto result = orig.stretch!int(2, 2);
+    dbg(result, "sssssssssssssssstretch ");
 }
 
 /*
@@ -1041,6 +1054,7 @@ int[] data = [
 
 /*
 
+this is ... bleah, it works but needs rethinking
 export function stretch(orig, new_width, new_height) {
     const height = orig.length
     const spacing = (new_height - 1)/( height - 1 )
