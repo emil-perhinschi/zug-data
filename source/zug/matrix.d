@@ -14,15 +14,6 @@ struct Offset
     size_t y;
 }
 
-struct RGBCell(T) if (isNumeric!T)
-{
-    t red = 0;
-    t green = 0;
-    t blue = 0;
-}
-
-///
-alias CoordinatesMatrix = size_t[];
 
 ///
 // TODO: functions which give info about the matrix or modify the matrix should stay in the class as methods
@@ -237,12 +228,29 @@ struct Matrix(T) if (isNumeric!T)
         return result;
     }
 
-    /// Matrix column
+    /// get Matrix column
     unittest
     {
         Matrix!int orig = Matrix!int([1, 2, 3, 4, 5, 6, 7, 8, 9], 3);
         dbg!int(orig, "matrix for column");
         dbg!int(orig.column(1), orig.height, "column 1");
+    }
+
+    /// set column
+    void column(T[] new_column, size_t x) {
+        for (size_t i = 0; i < this.height; i++) {
+            this.set( i * this.width + x, new_column[i] );
+        }
+    }
+
+    unittest {
+        import std.algorithm.comparison: equal;
+        auto orig = Matrix!int(5,5);
+        int[] column = [5,5,5,5,5];
+        orig.column(column, 2);
+        dbg(orig, "column set");
+        auto check = orig.column(2);
+        assert(check.equal(column));
     }
 
     ///
@@ -256,12 +264,29 @@ struct Matrix(T) if (isNumeric!T)
         return result;
     }
 
-    /// Matrix row
+    /// get Matrix row
     unittest
     {
         Matrix!int orig = Matrix!int([1, 2, 3, 4, 5, 6, 7, 8, 9], 3);
         dbg!int(orig, "matrix for row");
         dbg!int(orig.row(1), orig.width, "row 1");
+    }
+
+    /// set row
+    void row(T[] new_row, size_t y) {
+        size_t first_id = y*width;
+        size_t last_id = first_id + width;
+        auto row = this.data[first_id..last_id] = new_row;
+    }
+
+    unittest {
+        import std.algorithm.comparison: equal;
+        auto orig = Matrix!int(5,5);
+        int[] row = [5,5,5,5,5];
+        orig.row(row, 2);
+        dbg(orig, "row set");
+        auto check = orig.row(2);
+        assert(check.equal(row));
     }
 
     ///
@@ -741,6 +766,7 @@ unittest
 
 ///
 Matrix!T multiply(T)(Matrix!T first, Matrix!T second)
+if (isNumeric!T)
 in
 {
     assert(first.width == second.height,
@@ -895,27 +921,33 @@ unittest
 
 }
 
-T[] stretch_row(T)(T[] orig, size_t new_size)
-{
+private double[] stretch_row_coordinates(size_t orig_length, size_t new_length) {
 
-    double spacing = ((new_size.to!double - 1) / (orig.length.to!double - 1));
-    double[] stretched_coordinates = new double[orig.length];
-    for (size_t i = 0; i < orig.length; i++)
+    double spacing = ((new_length.to!double - 1) / (orig_length.to!double - 1));
+    double[] stretched_coordinates = new double[orig_length];
+    for (size_t i = 0; i < orig_length; i++)
     {
         stretched_coordinates[i] = i.to!double * spacing;
     }
 
     // deal with floating point weirdnesses, make sure the last value is what it should be
-    stretched_coordinates[stretched_coordinates.length - 1] = new_size - 1;
+    stretched_coordinates[stretched_coordinates.length - 1] = new_length - 1;
+
+    return stretched_coordinates;
+}
+
+T[] stretch_row(T)(T[] orig, size_t new_length)
+{
+
+    double[] stretched_coordinates = stretch_row_coordinates(orig.length, new_length);
 
     size_t orig_coordinates = 0;
     double next_coordinates = stretched_coordinates[orig_coordinates];
     double prev_coordinates = 0;
-    T[] stretched = new T[new_size];
+    T[] stretched = new T[new_length];
 
-    for (size_t i = 0; i < new_size; i++)
+    for (size_t i = 0; i < new_length; i++)
     {
-        auto blabla = next_coordinates % 1;
         if (next_coordinates - i <= (next_coordinates % 1))
         {
             stretched[i] = orig[orig_coordinates];
@@ -989,26 +1021,22 @@ do
 
     size_t new_width  = ( orig.width  * scale_x ).to!size_t;
     size_t new_height = ( orig.height * scale_y ).to!size_t;
+    debug writeln("orig:", orig.width, "x", orig.height, " new_height:", new_height, " new_width: ", new_width);
 
-    writeln("orig:", orig.width, "x", orig.height, " new_height:", new_height, " new_width: ", new_width);
+    // dbg(orig);
+    // double[] new_vertical_coordinates = stretch_row_coordinates(orig.height, new_height);
+    // double[] new_horizontal_coordinates = stretch_row_coordinates(orig.width, new_width);
+    // debug writeln(new_vertical_coordinates, " vertical");
+    // debug writeln(new_horizontal_coordinates, " horizontal");
     
     Matrix!T result = Matrix!T(new_width, new_height);
 
-    auto coords = orig.coordinates!float();
-    Matrix!float transformation_matrix = Matrix!float([scale_x, 0, 0, scale_y], 2);
-    writeln(transformation_matrix, "transformation_matrix");
-    auto new_coords = coords.multiply!float(transformation_matrix);
-    dbg(new_coords, "new_coords");
+    // first get the rows from orig and stretch them and add to result in proper place
+    // then get each column from the result and interpolate missing values
 
-    // coords and new_coords are Matrix!size_t instances with width == 2
-    for (size_t i; i < new_coords.height; i++)
-    {
-        auto old_x = coords.get( i * 2 ).to!size_t;
-        auto old_y = coords.get( i * 2 + 1).to!size_t;
-        auto new_x = new_coords.get( i * 2 ).to!size_t;
-        auto new_y = new_coords.get( i * 2 + 1).to!size_t;
-        auto orig_value = orig.get(old_x, old_y);
-        result.set(new_x, new_y, orig_value);
+    for (size_t i = 0; i < orig.height; i++) {
+        auto stretched = stretch_row(orig.row(i), new_width);
+        // TODO from here
     }
 
     return result;
@@ -1025,32 +1053,6 @@ unittest
     dbg(result, "sssssssssssssssstretch ");
 }
 
-/*
-
-// dfmt off
-int[] data = [
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-    0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0,
-    0, 1, 0, 0, 1, 0, 0, 0, 1, 1, 0, 0, 0, 1, 0, 0, 1, 0,
-    0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0,
-    0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0,
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-    0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-    0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0,
-    0, 1, 0, 0, 1, 0, 0, 0, 1, 1, 0, 0, 0, 1, 0, 0, 1, 0,
-    0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0,
-    0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0,
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0,
-    0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0,
-    0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0,
-    0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0,
-    0, 1, 1, 1, 1, 0, 0, 0, 1, 1, 0, 0, 0, 1, 1, 1, 1, 0,
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
-];
-// dfmt on
-
-*/
 
 /*
 
@@ -1171,110 +1173,6 @@ function evaluate_neighbours(matrix, x, y) {
         throw new Error("got a NaN result, something is very wrong")
     }
     return value
-}
-
-
-export function stretch_row(orig, new_size) {
-
-    const spacing = (new_size - 1)/( orig.length - 1 )
-    const stretched_coordinates = Array.from(
-        Array(orig.length),
-        (value,i) => (i * spacing)
-    )
-
-    // deal with floating point weirdnesses, make sure the last value is what
-    //   it should be; problems happen when the initial matrix has one size 40
-    stretched_coordinates[stretched_coordinates.length -1] = new_size - 1
-
-    let orig_coordinates = 0
-    let next_coordinates = stretched_coordinates[orig_coordinates]
-    let prev_coordinates = 0
-    const stretched = Array.from(
-        Array(new_size),
-        function(undef, i) {
-
-            if (
-                // less than the fractional part
-                next_coordinates - i <= (next_coordinates % 1)
-            ) {
-                const value = orig[orig_coordinates]
-                prev_coordinates = next_coordinates
-                orig_coordinates += 1
-                next_coordinates = stretched_coordinates[orig_coordinates]
-                return value
-            } else {
-                const slope =
-                    Number(orig[orig_coordinates] - orig[orig_coordinates - 1])
-                    /
-                    Number(next_coordinates - prev_coordinates)
-
-                if(isNaN(slope)) {
-                    console.error("xxx slope is NaN", i, orig_coordinates, orig)
-                    throw new Error("something very wrong: slope is NaN")
-
-                }
-
-                const value =  Number(orig[orig_coordinates - 1])
-                    + Number( slope * (i - prev_coordinates) )
-
-                if(isNaN(value)) {
-                    console.error("yyy isNaN", i, slope, orig[orig_coordinates - 1], prev_coordinates, orig)
-                    throw new Error("something very wrong: value is NaN")
-                }
-                return value
-            }
-        }
-    )
-    return stretched
-}
-
-
-export function enlarge(orig, new_width, new_height) {
-    const height = orig.length
-    const spacing = (new_height - 1)/( height - 1 )
-    const stretched_coordinates = Array.from(
-        Array(height),
-        (value, i) => (i * spacing)
-    )
-
-    let orig_coordinates = 0
-    let next_coordinates = stretched_coordinates[orig_coordinates]
-    // let prev_coordinates = 0
-    const sparse = Array.from(
-        Array(new_height),
-        function(undef, i) {
-            if (
-                next_coordinates - i <= (next_coordinates % 1) // less than the fractional part
-            ) {
-                const stretched_row = stretch_row(orig[orig_coordinates], new_width)
-                // prev_coordinates = next_coordinates
-                orig_coordinates += 1
-                next_coordinates = stretched_coordinates[orig_coordinates]
-                return stretched_row
-            } else {
-                return Array.from(
-                    Array(new_width),
-                    () => null
-                )
-            }
-        }
-    )
-
-    const stretched = Array.from(
-        sparse,
-        (row, y) => Array.from(
-            sparse[y],
-            function(cell, x) {
-                if (cell === null ) {
-                    return evaluate_neighbours(sparse, x, y)
-                } else {
-                    return cell
-                }
-            }
-        )
-    )
-
-    return stretched
 }
 
 */
