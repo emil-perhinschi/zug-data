@@ -7,6 +7,8 @@ import std.range : chunks;
 import std.stdio : writeln;
 import std.conv : to;
 
+debug import _tests;
+
 ///
 struct Offset
 {
@@ -977,34 +979,6 @@ T[] stretch_row(T)(T[] orig, size_t new_length)
     return stretched;
 }
 
-unittest
-{
-    import std.algorithm.comparison : equal;
-
-    float[] orig = [0, 1, 2, 3, 4];
-    auto result = stretch_row(orig, 15);
-    // expected [0, 0.285714, 0.571429, 1, 1.14286, 1.42857, 1.71429, 2, 2.28571, 2.57143, 3, 3.14286, 3.42857, 3.71429, 4]
-    // assert(result.equal(expected)); ... floats will be floats :-/
-    // writeln("result", result);
-    assert(result.length == 15);
-    assert(result[0] == orig[0]);
-    assert(result[3] == orig[1]);
-    assert(result[7] == orig[2]);
-    assert(result[10] == orig[3]);
-    assert(result[14] == orig[4]);
-}
-
-unittest
-{
-    import std.algorithm.comparison : equal;
-
-    int[] orig = [0, 25, 75, 0, 255];
-    int[] result = stretch_row(orig, 15);
-    int[] expected = [0, 7, 14, 25, 32, 46, 60, 75, 53, 32, 0, 36, 109, 182, 255];
-    assert(result.equal(expected));
-}
-
-
 // TODO 
 /// stretch can only create an enlarged version of the original, else use squeeze (TODO squeeze)
 Matrix!T stretch(T)(Matrix!T orig, float scale_x, float scale_y)
@@ -1023,22 +997,36 @@ do
     size_t new_height = ( orig.height * scale_y ).to!size_t;
     debug writeln("orig:", orig.width, "x", orig.height, " new_height:", new_height, " new_width: ", new_width);
 
-    // dbg(orig);
-    // double[] new_vertical_coordinates = stretch_row_coordinates(orig.height, new_height);
-    // double[] new_horizontal_coordinates = stretch_row_coordinates(orig.width, new_width);
-    // debug writeln(new_vertical_coordinates, " vertical");
-    // debug writeln(new_horizontal_coordinates, " horizontal");
-    
     Matrix!T result = Matrix!T(new_width, new_height);
 
+    // double because they're not integers any more after stretching
+    double[] new_vertical_coordinates = stretch_row_coordinates(orig.height, new_height);
+    writeln(new_vertical_coordinates, " new_vertical_coordinates");
     // first get the rows from orig and stretch them and add to result in proper place
     // then get each column from the result and interpolate missing values
+    size_t original_y = 0;
+    double next_y = 0;
 
-    for (size_t i = 0; i < orig.height; i++) {
-        auto stretched = stretch_row(orig.row(i), new_width);
-        // TODO from here
+    for (size_t i = 0; i < new_height; i++) {
+        writeln( "i: ", i, " next_y: ", next_y, " original_y: ", original_y );
+        // writeln(orig.row(i), " original row ", i);
+        // writeln(stretched, " stretched row");
+       
+        if ( next_y - i <= next_y % 1 ) {
+            writeln(".........................");
+            auto stretched = stretch_row(orig.row(original_y), new_width);
+            result.row(stretched, i);
+            original_y++;
+            if (original_y < orig.height) {
+                next_y = new_vertical_coordinates[original_y];
+            } else {
+                break;
+            }
+        } else {
+            writeln("__________________________");
+        }
     }
-
+    
     return result;
 }
 
