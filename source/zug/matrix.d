@@ -16,7 +16,6 @@ struct Offset
     size_t y;
 }
 
-
 ///
 // TODO: functions which give info about the matrix or modify the matrix should stay in the class as methods
 // TODO: functions which create new stuff based on the matrix should stay out and be called via UFCS 
@@ -239,16 +238,20 @@ struct Matrix(T) if (isNumeric!T)
     }
 
     /// set column
-    void column(T[] new_column, size_t x) {
-        for (size_t i = 0; i < this.height; i++) {
-            this.set( i * this.width + x, new_column[i] );
+    void column(T[] new_column, size_t x)
+    {
+        for (size_t i = 0; i < this.height; i++)
+        {
+            this.set(i * this.width + x, new_column[i]);
         }
     }
 
-    unittest {
-        import std.algorithm.comparison: equal;
-        auto orig = Matrix!int(5,5);
-        int[] column = [5,5,5,5,5];
+    unittest
+    {
+        import std.algorithm.comparison : equal;
+
+        auto orig = Matrix!int(5, 5);
+        int[] column = [5, 5, 5, 5, 5];
         orig.column(column, 2);
         dbg(orig, "column set");
         auto check = orig.column(2);
@@ -275,16 +278,19 @@ struct Matrix(T) if (isNumeric!T)
     }
 
     /// set row
-    void row(T[] new_row, size_t y) {
-        size_t first_id = y*width;
+    void row(T[] new_row, size_t y)
+    {
+        size_t first_id = y * width;
         size_t last_id = first_id + width;
-        auto row = this.data[first_id..last_id] = new_row;
+        auto row = this.data[first_id .. last_id] = new_row;
     }
 
-    unittest {
-        import std.algorithm.comparison: equal;
-        auto orig = Matrix!int(5,5);
-        int[] row = [5,5,5,5,5];
+    unittest
+    {
+        import std.algorithm.comparison : equal;
+
+        auto orig = Matrix!int(5, 5);
+        int[] row = [5, 5, 5, 5, 5];
         orig.row(row, 2);
         dbg(orig, "row set");
         auto check = orig.row(2);
@@ -767,8 +773,7 @@ unittest
 }
 
 ///
-Matrix!T multiply(T)(Matrix!T first, Matrix!T second)
-if (isNumeric!T)
+Matrix!T multiply(T)(Matrix!T first, Matrix!T second) if (isNumeric!T)
 in
 {
     assert(first.width == second.height,
@@ -923,7 +928,8 @@ unittest
 
 }
 
-private double[] stretch_row_coordinates(size_t orig_length, size_t new_length) {
+private double[] stretch_row_coordinates(size_t orig_length, size_t new_length)
+{
 
     double spacing = ((new_length.to!double - 1) / (orig_length.to!double - 1));
     double[] stretched_coordinates = new double[orig_length];
@@ -969,8 +975,8 @@ T[] stretch_row(T)(T[] orig, size_t new_length)
             double slope = (orig[orig_coordinates] - orig[orig_coordinates - 1]).to!double / (
                     next_coordinates - prev_coordinates);
 
-            double value = orig[orig_coordinates - 1].to!double + (slope * (i - prev_coordinates))
-                .to!double;
+            double value = orig[orig_coordinates - 1].to!double 
+                + (slope * (i - prev_coordinates)).to!double;
 
             stretched[i] = value.to!T;
         }
@@ -979,9 +985,9 @@ T[] stretch_row(T)(T[] orig, size_t new_length)
     return stretched;
 }
 
-// TODO 
+
 /// stretch can only create an enlarged version of the original, else use squeeze (TODO squeeze)
-Matrix!T stretch(T)(Matrix!T orig, float scale_x, float scale_y)
+Matrix!T stretch_bilinear(T)(Matrix!T orig, float scale_x, float scale_y)
 in
 {
     assert(scale_x >= 1 && scale_y >= 1);
@@ -993,9 +999,10 @@ do
         return orig.copy();
     }
 
-    size_t new_width  = ( orig.width  * scale_x ).to!size_t;
-    size_t new_height = ( orig.height * scale_y ).to!size_t;
-    debug writeln("orig:", orig.width, "x", orig.height, " new_height:", new_height, " new_width: ", new_width);
+    size_t new_width = (orig.width * scale_x).to!size_t;
+    size_t new_height = (orig.height * scale_y).to!size_t;
+    debug writeln("orig:", orig.width, "x", orig.height, " new_height:",
+            new_height, " new_width: ", new_width);
 
     Matrix!T result = Matrix!T(new_width, new_height);
 
@@ -1006,164 +1013,99 @@ do
     // then get each column from the result and interpolate missing values
     size_t original_y = 0;
     double next_y = 0;
-
-    for (size_t i = 0; i < new_height; i++) {
-        writeln( "i: ", i, " next_y: ", next_y, " original_y: ", original_y );
-        // writeln(orig.row(i), " original row ", i);
-        // writeln(stretched, " stretched row");
-       
-        if ( next_y - i <= next_y % 1 ) {
-            writeln(".........................");
+    size_t[] populated_rows_coordinates;
+    for (size_t i = 0; i < new_height; i++)
+    {
+        if (next_y - i <= next_y % 1)
+        {
             auto stretched = stretch_row(orig.row(original_y), new_width);
             result.row(stretched, i);
             original_y++;
-            if (original_y < orig.height) {
-                next_y = new_vertical_coordinates[original_y];
-            } else {
+            populated_rows_coordinates ~= i;
+
+            if (original_y >= orig.height)
+            {
                 break;
             }
-        } else {
-            writeln("__________________________");
+
+            next_y = new_vertical_coordinates[original_y];
         }
     }
+
+    // interpolate between the rows set above rows
+    // need all the known rows to be already set, 
+    //    that's why the interpolation is delayed
     
+    // start from the top set row and interpolate the missing values 
+    //     until the bottom set row
+    size_t top_row_id;
+    size_t bottom_row_id;
+
+    for (size_t i = 0; i < populated_rows_coordinates.length; i++)
+    {
+        if (bottom_row_id == 0)
+        { // first loop
+            top_row_id = populated_rows_coordinates[i];
+            bottom_row_id = populated_rows_coordinates[i + 1];
+            i++;
+        }
+        else
+        {
+            top_row_id = bottom_row_id;
+            bottom_row_id = populated_rows_coordinates[i];
+        }
+
+        // for each column between those two rows calculate the slope
+        // then interpolate all missing elements
+        for (size_t x = 0; x < new_width; x++)
+        {
+            double top_value = result.get(x, top_row_id).to!double;
+            double bottom_value = result.get(x, bottom_row_id).to!double;
+
+            // calculate the slope once per vertical segment
+            double slope = (bottom_value - top_value).to!double 
+                / (bottom_row_id - top_row_id).to!double;
+            double last_computed_value = top_value;
+            // SEEME: can I do this in parallel ?
+            //    maybe if the distance between the populated rows is big enough ?
+            // A: not really, need the last computed value before going on, probably, I think
+            // TODO look into this later
+            for (size_t y = top_row_id + 1; y <  bottom_row_id; y++)
+            {
+                // stepping over 1, so just add the slope to save on computations
+                // SEEME: maybe if using only the start, the end and the position in betwee
+                //    I don't need the last_computed_value, so I can make this parallel ?
+                double value = last_computed_value + slope;
+                result.set(x,y, value.to!T);
+                last_computed_value = value;
+            }
+        }
+    }
     return result;
 }
 
-
-/// TODO
+// TODO visual inspection works fine but add some asserts too
 unittest
 {
 
     auto orig = Matrix!int([0, 5, 10, 15, 20, 25, 30, 35, 40], 3);
     dbg(orig.coordinates!float, "old_coords");
-    auto result = orig.stretch!int(2, 2);
+    auto result = orig.stretch_bilinear!int(2, 2);
     dbg(result, "sssssssssssssssstretch ");
 }
+// TODO visual inspection works fine but add some asserts too
+unittest
+{
+    auto orig = Matrix!float([0.1, 5.3, 11.2, 14.0, 19.8, 15.1, 30.3, 35.1, 41.7], 3);
+    dbg(orig.coordinates!float, "old_coords");
+    auto result = orig.stretch_bilinear!float(2, 2);
+    dbg(result, "sssssssssssssssstretch floats");
 
-
-/*
-
-this is ... bleah, it works but needs rethinking
-export function stretch(orig, new_width, new_height) {
-    const height = orig.length
-    const spacing = (new_height - 1)/( height - 1 )
-    const stretched_coordinates = Array.from(
-        Array(height),
-        (value, i) => (i * spacing)
-    )
-    // deal with floating point weirdnesses, make sure the last value is what
-    //   it should be; problems happen when the initial matrix has one size 40
-    stretched_coordinates[stretched_coordinates.length - 1] = new_height - 1
-
-    let orig_coordinates = 0
-    let next_coordinates = stretched_coordinates[orig_coordinates]
-    // let prev_coordinates = 0
-    const sparse = Array.from(
-        Array(new_height),
-        function(undef, i) {
-            if (
-                next_coordinates - i <= (next_coordinates % 1) // less than the fractional part
-            ) {
-                const stretched_row = stretch_row(orig[orig_coordinates], new_width)
-                // prev_coordinates = next_coordinates
-                orig_coordinates += 1
-                next_coordinates = stretched_coordinates[orig_coordinates]
-                return stretched_row
-            } else {
-                return Array.from(
-                    Array(new_width),
-                    () => null
-                )
-            }
-        }
-    )
-
-    const stretched = Array.from(
-        sparse,
-        (row, y) => Array.from(
-            row,
-            function(cell, x) {
-                if (cell === null ) {
-                    return evaluate_neighbours(sparse, x, y)
-                } else {
-                    return cell
-                }
-            }
-        )
-    )
-
-    return stretched
+    auto large = Matrix!double(sample_2d_array!double(), 18);
+    auto large_result = large.stretch_bilinear!double(3,3);
+    dbg(large_result, "sssssssssssssssstretch doubles large array");
 }
 
-function evaluate_neighbours(matrix, x, y) {
-
-    if (x !== parseInt(x)) { throw new Error("x is not an integer") }
-    if (y !== parseInt(y)) { throw new Error("y is not an integer") }
-
-    let top_value = 0
-    let bottom_value = 0
-    // we're in the top or bottom row:
-    //   that is wrong, the algorithm keeps the original
-    //   data for the borders on the new borders so it should not happen
-    if (typeof(matrix[y - 1]) === "undefined") {
-        console.error({ "length":matrix.length, "x": x, "y":y })
-        // console.error(matrix)
-        throw new Error("we're in the top row - , there should be no undefined value here")
-    }
-
-    if ( typeof(matrix[y + 1]) === "undefined") {
-        console.error({ "length":matrix.length, "x": x, "y":y })
-        // console.error(matrix)
-        throw new Error("we're in the top row +, there should be no undefined value here")
-    }
-
-    let top = 1 // distance to the first not null row
-    while (top < matrix.length) {
-        if (matrix[y - top ][x] !== null) {
-            top_value = Number(matrix[y - top ][x])
-            break
-        }
-        top += 1
-    }
-
-    let bottom = 1
-    while (bottom < matrix.length) {
-        if (matrix[y + bottom][x] !== null) {
-            bottom_value = Number(matrix[y + bottom][x])
-            if (isNaN(bottom_value)) {
-                console.error({
-                    y: y,
-                    bottom: bottom,
-                    x: x,
-                    wrong: matrix[y + bottom][x],
-                    length: matrix[0].length,
-                    height: matrix.length
-                })
-                throw new Error("bottom value isNaN, something is very wrong")
-            }
-            break
-        }
-        bottom += 1
-    }
-
-    const slope = (bottom_value - top_value)/(top + bottom)
-    const value = top_value + slope * (top)
-    if ( isNaN(value) ) {
-        console.error({
-            top_value: top_value,
-            top: top,
-            bottom: bottom,
-            bottom_value: bottom_value,
-            slope: slope,
-            value: value
-        })
-        throw new Error("got a NaN result, something is very wrong")
-    }
-    return value
-}
-
-*/
 
 private T[] sample_2d_array(T)() if (isNumeric!T)
 {
