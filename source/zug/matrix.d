@@ -7,8 +7,6 @@ import std.range : chunks;
 import std.stdio : writeln;
 import std.conv : to;
 
-debug import _tests;
-
 ///
 struct Offset
 {
@@ -395,8 +393,7 @@ struct Matrix(T) if (isNumeric!T)
         auto filter = delegate bool(int i) => i < 0;
         auto transformer = delegate int(int i) => 0;
         auto result = orig.replace_elements!int(filter, transformer);
-        // writeln(result);
-        // [1, 0, 0, 5, 7]
+
         assert(result.get(0) == 1);
         assert(result.get(1) == 0);
         assert(result.get(2) == 0);
@@ -518,7 +515,6 @@ do
                 // this will allow for weighting
                 continue;
             }
-            // debug writeln(["orig.width": orig.width, "orig.height": orig.height, "start_x": start_x, "end_x": end_x, "start_y": start_y, "end_y": end_y, "j":j, "i":i]);
             result ~= orig.get(j, i);
         }
     }
@@ -544,11 +540,9 @@ unittest
     dbg(larger_window, 1, "shaper_square(4,4,2)");
 
     auto left_top_corner_window = orig.shaper_square(0, 0, 2);
-    // writeln(left_top_corner_window, " length: ", left_top_corner_window.length, " left_top_corner_window");
     assert(left_top_corner_window.length == 8);
 
     auto bottom_right_corner_window = orig.shaper_square(7, 7, 2);
-    // writeln(bottom_right_corner_window, " length: ", bottom_right_corner_window.length, " bottom_right_corner_window");
     assert(bottom_right_corner_window.length == 8);
 }
 
@@ -695,7 +689,6 @@ do
     {
         for (size_t x = 0; x < orig.width; x++)
         {
-            // debug writeln("x: ", x, " y:", y);
             auto window = shaper(orig, x, y, distance);
             U new_element = calculator(orig, x, y, window);
             result.set(x, y, new_element);
@@ -985,6 +978,35 @@ T[] stretch_row(T)(T[] orig, size_t new_length)
     return stretched;
 }
 
+/// Stretch row
+unittest
+{
+    import std.algorithm.comparison : equal;
+
+    float[] orig = [0, 1, 2, 3, 4];
+    auto result = stretch_row(orig, 15);
+    // expected [0, 0.285714, 0.571429, 1, 1.14286, 1.42857, 1.71429, 2, 2.28571, 2.57143, 3, 3.14286, 3.42857, 3.71429, 4]
+    // assert(result.equal(expected)); ... floats will be floats :-/
+    // writeln("result", result);
+    assert(result.length == 15);
+    assert(result[0] == orig[0]);
+    assert(result[3] == orig[1]);
+    assert(result[7] == orig[2]);
+    assert(result[10] == orig[3]);
+    assert(result[14] == orig[4]);
+}
+
+/// Stretch row
+unittest
+{
+    import std.algorithm.comparison : equal;
+
+    int[] orig = [0, 25, 75, 0, 255];
+    int[] result = stretch_row(orig, 15);
+    int[] expected = [0, 7, 14, 25, 32, 46, 60, 75, 53, 32, 0, 36, 109, 182, 255];
+    assert(result.equal(expected));
+}
+
 
 /// stretch can only create an enlarged version of the original, else use squeeze (TODO squeeze)
 Matrix!T stretch_bilinear(T)(Matrix!T orig, float scale_x, float scale_y)
@@ -1001,14 +1023,12 @@ do
 
     size_t new_width = (orig.width * scale_x).to!size_t;
     size_t new_height = (orig.height * scale_y).to!size_t;
-    debug writeln("orig:", orig.width, "x", orig.height, " new_height:",
-            new_height, " new_width: ", new_width);
 
     Matrix!T result = Matrix!T(new_width, new_height);
 
     // double because they're not integers any more after stretching
     double[] new_vertical_coordinates = stretch_row_coordinates(orig.height, new_height);
-    writeln(new_vertical_coordinates, " new_vertical_coordinates");
+
     // first get the rows from orig and stretch them and add to result in proper place
     // then get each column from the result and interpolate missing values
     size_t original_y = 0;
