@@ -4,8 +4,13 @@ import std.array;
 import std.algorithm : map;
 import std.traits;
 import std.range : chunks;
-import std.stdio : writeln;
+
 import std.conv : to;
+
+version(unittest)
+{
+    import std.stdio : writeln;
+}
 
 ///
 struct Offset
@@ -1008,7 +1013,18 @@ unittest
 }
 
 
-/// stretch can only create an enlarged version of the original, else use squeeze (TODO squeeze)
+/**
+ * stretch_bilinear can only create an enlarged version of the original, 
+ *    else use squeeze (TODO squeeze) 
+ * 
+ * Params:
+ *   orig = Matrix!T,  orignal matrix
+ *   scale_x = float, how much to scale horizontally
+ *   scale_y = float, how much to scale vertically
+ *
+ * Returns:
+ *   stretched_matrix = Matrix!T, a new matrix with the requested size
+ */
 Matrix!T stretch_bilinear(T)(Matrix!T orig, float scale_x, float scale_y)
 in
 {
@@ -1077,6 +1093,7 @@ do
 
         // for each column between those two rows calculate the slope
         // then interpolate all missing elements
+        // TODO: move to a different function
         for (size_t x = 0; x < new_width; x++)
         {
             double top_value = result.get(x, top_row_id).to!double;
@@ -1103,6 +1120,55 @@ do
     }
     return result;
 }
+
+/**
+ * Params: 
+ *   input = an array with the first and last elements set, we need to interpolate
+ *                 those in the middle we don't look at the values in the middle, various 
+ *                 numeric types have various defaults (0 for int, nan for float etc.)
+ *
+ * Returns:
+ *   result = a new array with the values from 1 to the penultimate interpolated 
+ */
+T[] segment_linear_interpolation(T)(T[] input) {
+    T[] result = input.dup;
+
+    double top_value = input[0].to!double;
+    double bottom_value = input[$ - 1].to!double;
+
+    // calculate the slope once per vertical segment
+    double slope = (bottom_value - top_value).to!double 
+        / (input.length - 1).to!double;
+    double last_computed_value = top_value;
+    // SEEME: can I do this in parallel ?
+    //    maybe if the distance between the populated rows is big enough ?
+    // A: not really, need the last computed value before going on, probably, I think
+    // TODO look into this later
+    for (size_t i = 1; i <  input.length - 1; i++)
+    {
+        // stepping over 1, so just add the slope to save on computations
+        // SEEME: maybe if using only the start, the end and the position in betwee
+        //    I don't need the last_computed_value, so I can make this parallel ?
+        double value = last_computed_value + slope;
+        result[i] = value;
+        last_computed_value = value;
+    }
+
+    return result;
+}
+
+unittest
+{
+    import std.algorithm.comparison: equal;
+    float[] orig = new float[10];
+    orig[0] =  1;
+    orig[9] = 10;
+    float[] result = orig.segment_linear_interpolation();
+    float[] expected = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+    dbg(result, 1, "linear_interpolation result");
+    assert(expected.equal(result));
+}
+
 
 // TODO visual inspection works fine but add some asserts too
 unittest
@@ -1154,81 +1220,3 @@ private T[] sample_2d_array(T)() if (isNumeric!T)
     return data;
 }
 
-/** 
-    Debuging helpers, should move to another module 
-*/
-
-///
-bool do_debug()
-{
-    import std.process;
-
-    if (environment.get("DEBUG") is null)
-    {
-        return false;
-    }
-
-    int can_debug = environment.get("DEBUG").to!int;
-
-    if (can_debug == 0)
-    {
-        return false;
-    }
-    return true;
-}
-
-///
-void dbg(T)(T[][] data, string label = "")
-{
-    if (do_debug)
-    {
-        if (label != "")
-        {
-            label = "\n# " ~ label;
-        }
-        writeln(label);
-        foreach (T[] row; data)
-        {
-            writeln("# ", row);
-        }
-        writeln();
-    }
-}
-
-///
-void dbg(T)(T[] data, size_t width, string label = "")
-{
-    if (do_debug())
-    {
-        if (label != "")
-        {
-            label = "\n# " ~ label;
-        }
-        writeln(label);
-        auto chunked = data.chunks(width);
-        foreach (T[] row; chunked)
-        {
-            writeln("# ", row);
-        }
-        writeln();
-    }
-}
-
-///
-void dbg(T)(Matrix!T orig, string label = "")
-{
-    if (do_debug())
-    {
-        if (label != "")
-        {
-            label = "\n# " ~ label;
-        }
-        writeln(label);
-        auto chunked = orig.data.chunks(orig.width);
-        foreach (T[] row; chunked)
-        {
-            writeln("# ", row);
-        }
-        writeln();
-    }
-}
