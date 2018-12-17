@@ -1,11 +1,12 @@
-module zug.matrix;
+module zug.matrix.basic;
 
 import std.array;
 import std.algorithm : map;
 import std.traits;
 import std.range : chunks;
-
 import std.conv : to;
+
+import zug.matrix.dbg;
 
 version(unittest)
 {

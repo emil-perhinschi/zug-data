@@ -5,6 +5,5 @@
 	],
 	"description": "manipulate 2d matrices useful for generating random heightmaps, not useful for math",
 	"copyright": "Copyright © 2018, Emil Nicolaie Perhinschi",
-	"license": "proprietary",
-    "dflags": ["-Df__dummy.html", "-Xfdocs.json"]
+	"license": "proprietary"
 }
