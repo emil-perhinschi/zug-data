@@ -107,7 +107,7 @@ unittest
     assert(expected.equal(result));
 }
 
-private double[] stretch_row_coordinates(size_t orig_length, size_t new_length)
+double[] stretch_row_coordinates(size_t orig_length, size_t new_length)
 {
 
     double spacing = ((new_length.to!double - 1) / (orig_length.to!double - 1));
