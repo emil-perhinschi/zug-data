@@ -19,9 +19,14 @@ struct Offset
     size_t y;
 }
 
-///
 // TODO: functions which give info about the matrix or modify the matrix should stay in the class as methods
 // TODO: functions which create new stuff based on the matrix should stay out and be called via UFCS 
+
+/**
+ * 
+ *
+ */
+
 struct Matrix(T) if (isNumeric!T)
 {
 
@@ -158,6 +163,31 @@ struct Matrix(T) if (isNumeric!T)
         assert(small.width == 2);
     }
 
+    // https://en.wikipedia.org/wiki/Scaling_(geometry)#Using_homogeneous_coordinates
+    // TODO: I really don't know what I am doing
+    Matrix!T homogenous_coordinates(T)() if (isNumeric!T)
+    {
+        Matrix!T result = Matrix!T(3, this.width*this.height );
+
+        for (size_t i = 0; i < (this.width * this.height); i++)
+        {
+            auto modulo = (i % this.width).to!T;
+            result.set(0, i, modulo);
+            result.set(1, i, ((i - modulo) / this.width).to!T);
+            result.set(2, i, 1);
+        }
+        return result;
+    }
+    /// homogenous_coordinates
+    unittest
+    {
+        auto orig = Matrix!int([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11], 3);
+        dbg(orig, "Matrix 3x4 orig, testing coordinates");
+        auto coord = orig.homogenous_coordinates!size_t();
+        dbg(coord, "homogenous coordinates");
+
+    }
+
 
     ///
     Matrix!T coordinates(T)() if (isNumeric!T)
@@ -176,7 +206,7 @@ struct Matrix(T) if (isNumeric!T)
     unittest
     {
         auto orig = Matrix!int([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11], 3);
-        dbg(orig, "Matrix 3x4");
+        dbg(orig, "Matrix 3x4 orig, testing coordinates");
         auto coord = orig.coordinates!size_t();
         dbg(coord, "coordinates");
 
@@ -396,7 +426,7 @@ unittest
 {
     auto orig = Matrix!int([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11], 3);
 
-    dbg(orig, "Matrix 3x4");
+    dbg(orig, "Matrix 3x4, testing instatiation");
     assert(orig.get(0, 0) == 0, "get 0,0");
     assert(orig.get(1, 1) == 4, "get 1,1");
     assert(orig.get(2, 2) == 8, "get 2,2");
@@ -720,6 +750,76 @@ unittest
     dbg(smooth, "smoothed with moving average over square window");
 }
 
+// TODO 
+// https://en.wikipedia.org/wiki/Scaling_(geometry)#Using_homogeneous_coordinates
+/**
+
+
+  Notes: the numbers in the transformation matrix are not about how many rows and 
+  columns will the new matrix have after interpolation, instead are relevant only
+  for each vector describing the coordinates of each pixel
+
+  if I want to grow the image by 1.5 horizontally I need to find out how many columns 
+  the new image will have, remove 1 because indices are indexed at zero, and those are 
+  the x coordinates of the last row, and based on the original coordinates of the last 
+  row I should find the scaling number which should go into the transformation matrix 
+  in the X position
+  
+ */
+
+Matrix!T scale(T)(Matrix!T orig, double scale_x, double scale_y ) {
+    import std.math: round;
+
+
+    // in very detailed steps because I keep forgetting this and revert to thinking in 
+    //   scaling images instead of thinking in terms of vectors
+
+    double orig_width = orig.width.to!double;
+    double orig_height = orig.height.to!double;
+
+    double new_width = round(orig_width * scale_x);
+    double new_height = round(orig_height * scale_x);
+
+    double orig_max_x_index = orig_width - 1;
+    double orig_max_y_index = orig_height - 1;
+
+    double new_max_x_index = new_width - 1;
+    double new_max_y_index = new_height - 1;
+
+    double vector_scale_x = new_max_x_index / orig_max_x_index;
+    double vector_scale_y = new_max_y_index / orig_max_y_index; 
+
+    // the projective transformation matrix
+    Matrix!double trans_m = Matrix!double([
+            vector_scale_x, 0,       0,
+            0,       vector_scale_y, 0,
+            0,       0,              1
+        ],
+        3
+    );
+
+    auto coordinates = orig.homogenous_coordinates!double();
+    dbg(coordinates, "homogenous_coordinates orig");
+    auto scaled_coordinates = coordinates.multiply(trans_m);
+    dbg(scaled_coordinates, "homogenous_coordinates scaled");
+
+    auto result = Matrix!T(new_width.to!size_t, new_height.to!size_t);
+    dbg(result, "result");
+
+    for (size_t i = 0; i < scaled_coordinates.height; i++) {
+        // the old coordinates were kept as doubles to allow scaling by fractional numbers
+        //     now we need to return them to size_t
+        size_t old_x = coordinates.get(0, i).to!size_t;
+        size_t old_y = coordinates.get(1, i).to!size_t;
+
+        size_t new_x = round( scaled_coordinates.get(0, i) ).to!size_t;
+        size_t new_y = round( scaled_coordinates.get(1, i) ).to!size_t;
+
+        auto old_value = orig.get(old_x, old_y);
+        result.set(new_x, new_y, old_value);
+    }
+    return result;
+}
 
 ///
 Matrix!T multiply(T)(Matrix!T first, Matrix!T second) if (isNumeric!T)
