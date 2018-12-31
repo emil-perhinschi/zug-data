@@ -7,7 +7,7 @@ import std.conv : to;
 
 import zug.matrix;
 
-version(unittest)
+version (unittest)
 {
     import std.stdio : writeln;
 }
@@ -128,20 +128,19 @@ struct Matrix(T) if (isNumeric!T)
 
         return Matrix!T(result, width);
     }
-
-    /// Matrix dice
+    /// 
     unittest
     {
         // dfmt off
-    int[] data = [
-        0, 0, 0, 0, 0, 0,
-        0, 1, 1, 1, 1, 0,
-        0, 1, 0, 0, 1, 0,
-        0, 1, 0, 0, 1, 0,
-        0, 1, 1, 1, 1, 0,
-        0, 0, 0, 0, 0, 0
-    ];
-    // dfmt on
+        int[] data = [
+            0, 0, 0, 0, 0, 0,
+            0, 1, 1, 1, 1, 0,
+            0, 1, 0, 0, 1, 0,
+            0, 1, 0, 0, 1, 0,
+            0, 1, 1, 1, 1, 0,
+            0, 0, 0, 0, 0, 0
+        ];
+        // dfmt on
 
         size_t width = 6;
         auto orig = Matrix!int(data, width);
@@ -167,7 +166,7 @@ struct Matrix(T) if (isNumeric!T)
     // TODO: I really don't know what I am doing
     Matrix!T homogenous_coordinates(T)() if (isNumeric!T)
     {
-        Matrix!T result = Matrix!T(3, this.width*this.height );
+        Matrix!T result = Matrix!T(3, this.width * this.height);
 
         for (size_t i = 0; i < (this.width * this.height); i++)
         {
@@ -187,7 +186,6 @@ struct Matrix(T) if (isNumeric!T)
         dbg(coord, "homogenous coordinates");
 
     }
-
 
     ///
     Matrix!T coordinates(T)() if (isNumeric!T)
@@ -367,29 +365,34 @@ struct Matrix(T) if (isNumeric!T)
     }
 
     ///
-    Matrix!T replace_elements(T)(bool delegate(T) filter, T delegate(T) transform)
+    Matrix!R replace_elements(T, R)(bool delegate(T) filter, R delegate(T) transform)
+            if (isNumeric!T && isNumeric!R)
     {
         import std.algorithm : map;
 
-        auto result = map!((T i) {
+        auto transformer = delegate R(T i) {
             if (filter(i))
             {
                 return transform(i);
             }
-            return i;
-        })(this.data[0 .. $]).array.dup;
+            return i.to!R;
+        };
 
-        return Matrix(result, this.width);
+        R[] result = map!(transformer)(this.data[0 .. $]).array;
+
+        return Matrix!R(result, this.width);
     }
 
     /// replace_elements
     unittest
     {
         auto orig = Matrix!int([1, 0, -1, 5, 7], 5);
+        dbg(orig, "replace_elements orig");
         auto filter = delegate bool(int i) => i < 0;
         auto transformer = delegate int(int i) => 0;
-        auto result = orig.replace_elements!int(filter, transformer);
 
+        auto result = orig.replace_elements!(int, int)(filter, transformer);
+        dbg(result, "replace_elements result");
         assert(result.get(0) == 1);
         assert(result.get(1) == 0);
         assert(result.get(2) == 0);
@@ -442,9 +445,8 @@ Matrix!int normalize(T)(Matrix!T orig, T normal_min, T normal_max) if (isNumeric
     auto min = orig.min;
     auto max = orig.max;
 
-    auto new_data = map!(
-            (T value) => normalize_value!(T, int)(value, min, max, normal_min, normal_max)
-        )(orig.data[0 .. $]).array;
+    auto new_data = map!((T value) => normalize_value!(T, int)(value, min, max,
+            normal_min, normal_max))(orig.data[0 .. $]).array;
     return Matrix!int(new_data, orig.width);
 }
 
@@ -473,7 +475,6 @@ unittest
     assert(result.get(1) == 16);
     assert(result.get(2) == 7);
 }
-
 
 /// http://mathforum.org/library/drmath/view/60433.html 1 + (x-A)*(10-1)/(B-A)
 U normalize_value(T, U)(T item, T actual_min_value, T actual_max_value, T normal_min, T normal_max)
@@ -767,15 +768,59 @@ unittest
   
  */
 
-Matrix!T scale(T)(Matrix!T orig, double scale_x, double scale_y ) {
-    import std.math: round;
+Matrix!T scale(T)(Matrix!T orig, double scale_x, double scale_y)
+{
+    import std.math : round;
 
+    auto coordinates = orig.coordinates!double();
+    auto scaled_coordinates = scale_coordinates!T(coordinates, orig.width,
+            orig.height, scale_x, scale_y);
+    dbg(scaled_coordinates, "coordinates scaled");
 
-    // in very detailed steps because I keep forgetting this and revert to thinking in 
+    size_t new_width = round(orig.width.to!double * scale_x).to!size_t;
+    size_t new_height = round(orig.height.to!double * scale_x).to!size_t;
+
+    auto result = Matrix!T(new_width, new_height);
+    dbg(result, "result");
+
+    for (size_t i = 0; i < scaled_coordinates.height; i++)
+    {
+        // the old coordinates were kept as doubles to allow scaling by fractional numbers
+        //     now we need to return them to size_t
+        size_t old_x = coordinates.get(0, i).to!size_t;
+        size_t old_y = coordinates.get(1, i).to!size_t;
+
+        size_t new_x = round(scaled_coordinates.get(0, i)).to!size_t;
+        size_t new_y = round(scaled_coordinates.get(1, i)).to!size_t;
+
+        auto old_value = orig.get(old_x, old_y);
+        result.set(new_x, new_y, old_value);
+    }
+    return result;
+}
+
+/**
+ * scale_coordinates returns a 2D Matrix!double with the coordinates of each point in the original matrix 
+ *   put in the position 
+ */
+Matrix!size_t scale_coordinates(T)(Matrix!T coordinates, size_t width,
+        size_t height, double scale_x, double scale_y) if (isNumeric!T)
+in
+{
+    // width of two, that is x and y
+    assert(coordinates.width == 2);
+    // height of the coordinates matrix is equal to the total number of elements in the original
+    assert(coordinates.height == width * height);
+}
+do
+{
+    import std.math : round;
+
+    // very detailed steps because I keep forgetting this and revert to thinking in 
     //   scaling images instead of thinking in terms of vectors
 
-    double orig_width = orig.width.to!double;
-    double orig_height = orig.height.to!double;
+    double orig_width = width.to!double;
+    double orig_height = height.to!double;
 
     double new_width = round(orig_width * scale_x);
     double new_height = round(orig_height * scale_x);
@@ -787,38 +832,30 @@ Matrix!T scale(T)(Matrix!T orig, double scale_x, double scale_y ) {
     double new_max_y_index = new_height - 1;
 
     double vector_scale_x = new_max_x_index / orig_max_x_index;
-    double vector_scale_y = new_max_y_index / orig_max_y_index; 
+    double vector_scale_y = new_max_y_index / orig_max_y_index;
 
-    // the projective transformation matrix
-    Matrix!double trans_m = Matrix!double([
-            vector_scale_x, 0,       0,
-            0,       vector_scale_y, 0,
-            0,       0,              1
-        ],
-        3
-    );
+    // SEEME not using a projective transformation matrix but here is
+    //    a link explaining what it is about in case I need to come back
+    // https://www.tomdalling.com/blog/modern-opengl/explaining-homogenous-coordinates-and-projective-geometry/ 
+    Matrix!double trans_m = Matrix!double([vector_scale_x, 0, 0, vector_scale_y], 2);
 
-    auto coordinates = orig.homogenous_coordinates!double();
-    dbg(coordinates, "homogenous_coordinates orig");
-    auto scaled_coordinates = coordinates.multiply(trans_m);
-    dbg(scaled_coordinates, "homogenous_coordinates scaled");
+    return coordinates.multiply(trans_m).round_elements!(T, size_t)();
+}
 
-    auto result = Matrix!T(new_width.to!size_t, new_height.to!size_t);
-    dbg(result, "result");
+Matrix!R round_elements(T, R)(Matrix!T orig) if (isNumeric!T && isIntegral!R)
+{
+    import std.math : round;
 
-    for (size_t i = 0; i < scaled_coordinates.height; i++) {
-        // the old coordinates were kept as doubles to allow scaling by fractional numbers
-        //     now we need to return them to size_t
-        size_t old_x = coordinates.get(0, i).to!size_t;
-        size_t old_y = coordinates.get(1, i).to!size_t;
-
-        size_t new_x = round( scaled_coordinates.get(0, i) ).to!size_t;
-        size_t new_y = round( scaled_coordinates.get(1, i) ).to!size_t;
-
-        auto old_value = orig.get(old_x, old_y);
-        result.set(new_x, new_y, old_value);
+    static if (isIntegral!T)
+    {
+        return orig.copy();
     }
-    return result;
+    else
+    {
+        auto filter = delegate bool(T i) => true;
+        auto transform = delegate R(T i) => round(i).to!R;
+        return orig.replace_elements!(T, R)(filter, transform);
+    }
 }
 
 ///
@@ -977,8 +1014,6 @@ unittest
 
 }
 
-
-
 /**
  * stretch_bilinear can only create an enlarged version of the original, 
  *    else use squeeze (TODO squeeze) 
@@ -1037,7 +1072,7 @@ do
     // interpolate between the rows set above rows
     // need all the known rows to be already set, 
     //    that's why the interpolation is delayed
-    
+
     // start from the top set row and interpolate the missing values 
     //     until the bottom set row
     size_t top_row_id;
@@ -1066,20 +1101,19 @@ do
             double bottom_value = result.get(x, bottom_row_id).to!double;
 
             // calculate the slope once per vertical segment
-            double slope = (bottom_value - top_value).to!double 
-                / (bottom_row_id - top_row_id).to!double;
+            double slope = (bottom_value - top_value).to!double / (bottom_row_id - top_row_id).to!double;
             double last_computed_value = top_value;
             // SEEME: can I do this in parallel ?
             //    maybe if the distance between the populated rows is big enough ?
             // A: not really, need the last computed value before going on, probably, I think
             // TODO look into this later
-            for (size_t y = top_row_id + 1; y <  bottom_row_id; y++)
+            for (size_t y = top_row_id + 1; y < bottom_row_id; y++)
             {
                 // stepping over 1, so just add the slope to save on computations
                 // SEEME: maybe if using only the start, the end and the position in betwee
                 //    I don't need the last_computed_value, so I can make this parallel ?
                 double value = last_computed_value + slope;
-                result.set(x,y, value.to!T);
+                result.set(x, y, value.to!T);
                 last_computed_value = value;
             }
         }
@@ -1105,7 +1139,6 @@ unittest
     dbg(result, "sssssssssssssssstretch floats");
 
     auto large = Matrix!double(sample_2d_array!double(), 18);
-    auto large_result = large.stretch_bilinear!double(3,3);
+    auto large_result = large.stretch_bilinear!double(3, 3);
     dbg(large_result, "sssssssssssssssstretch doubles large array");
 }
-
