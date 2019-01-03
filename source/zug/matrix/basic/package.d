@@ -1,4 +1,4 @@
-module zug.matrix.basic;
+module zug.matrix.generic;
 
 import std.array;
 import std.algorithm : map;

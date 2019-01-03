@@ -1,6 +1,6 @@
 module tests.multiply;
 
-import zug.matrix;
+import zug.matrix.generic;
 
 unittest
 {
