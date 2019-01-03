@@ -98,6 +98,8 @@ unittest
     assert(result.get(3) == 10);
 }
 
+
+
 Matrix!T transpose(T)(Matrix!T orig) if (isNumeric!T)
 {
     auto result = Matrix!T(orig.height, orig.width);
@@ -111,6 +113,7 @@ Matrix!T transpose(T)(Matrix!T orig) if (isNumeric!T)
     return result;
 }
 
+/// transpose square matrix
 unittest
 {
     // dfmt off
@@ -165,4 +168,40 @@ unittest
     {
         assert(result.get(i) == expected.get(i));
     }
+}
+
+///
+Matrix!R replace_elements(T, R)(bool delegate(T) filter, R delegate(T) transform)
+        if (isNumeric!T && isNumeric!R)
+{
+    import std.algorithm : map;
+
+    auto transformer = delegate R(T i) {
+        if (filter(i))
+        {
+            return transform(i);
+        }
+        return i.to!R;
+    };
+
+    R[] result = map!(transformer)(this.data[0 .. $]).array;
+
+    return Matrix!R(result, this.width);
+}
+
+/// replace_elements
+unittest
+{
+    auto orig = Matrix!int([1, 0, -1, 5, 7], 5);
+    dbg(orig, "replace_elements orig");
+    auto filter = delegate bool(int i) => i < 0;
+    auto transformer = delegate int(int i) => 0;
+
+    auto result = orig.replace_elements!(int, int)(filter, transformer);
+    dbg(result, "replace_elements result");
+    assert(result.get(0) == 1);
+    assert(result.get(1) == 0);
+    assert(result.get(2) == 0);
+    assert(result.get(3) == 5);
+    assert(result.get(4) == 7);
 }

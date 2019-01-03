@@ -163,7 +163,7 @@ struct Matrix(T) if (isNumeric!T)
     }
 
     // https://en.wikipedia.org/wiki/Scaling_(geometry)#Using_homogeneous_coordinates
-    // TODO: I really don't know what I am doing
+    // https://www.tomdalling.com/blog/modern-opengl/explaining-homogenous-coordinates-and-projective-geometry/ 
     Matrix!T homogenous_coordinates(T)() if (isNumeric!T)
     {
         Matrix!T result = Matrix!T(3, this.width * this.height);
@@ -362,42 +362,6 @@ struct Matrix(T) if (isNumeric!T)
                 size_t y) => 0), "Matrix.window");
         debug dbg(orig.window!float(Offset(0, 0), 4, delegate(size_t x,
                 size_t y) => 0), "Matrix.window");
-    }
-
-    ///
-    Matrix!R replace_elements(T, R)(bool delegate(T) filter, R delegate(T) transform)
-            if (isNumeric!T && isNumeric!R)
-    {
-        import std.algorithm : map;
-
-        auto transformer = delegate R(T i) {
-            if (filter(i))
-            {
-                return transform(i);
-            }
-            return i.to!R;
-        };
-
-        R[] result = map!(transformer)(this.data[0 .. $]).array;
-
-        return Matrix!R(result, this.width);
-    }
-
-    /// replace_elements
-    unittest
-    {
-        auto orig = Matrix!int([1, 0, -1, 5, 7], 5);
-        dbg(orig, "replace_elements orig");
-        auto filter = delegate bool(int i) => i < 0;
-        auto transformer = delegate int(int i) => 0;
-
-        auto result = orig.replace_elements!(int, int)(filter, transformer);
-        dbg(result, "replace_elements result");
-        assert(result.get(0) == 1);
-        assert(result.get(1) == 0);
-        assert(result.get(2) == 0);
-        assert(result.get(3) == 5);
-        assert(result.get(4) == 7);
     }
 
     Matrix!T copy()
@@ -658,98 +622,6 @@ unittest
     assert(window[1] == 0, "unchanged element in orig is in the expected spot");
 }
 
-/**
-*  Simple moving average calculator callback, the default callback passed to the moving_average function
-*
-*  Params:
-*    orig = Matrix!T, original matrix 
-*    x = size_t, current element x coordinate
-*    y = size_t, current element y coordinate
-*    window = T[], the moving window as retrieved by the shaper callback sent to moving_average
-*
-*  Returns: a number of the type U specified when calling the function
-*/
-U moving_average_simple_calculator(U, T)(Matrix!T orig, size_t x, size_t y, T[] window)
-        if (isNumeric!T)
-{
-    import std.algorithm.iteration : sum;
-
-    auto total = orig.get(x, y) + window.sum;
-    auto count = window.length.to!T + 1;
-
-    static if (is(U == T))
-    {
-        return total / count;
-    }
-    else
-    {
-        return total.to!U / count.to!U;
-    }
-}
-
-unittest
-{
-    auto orig = Matrix!int(3, 3);
-    size_t x = 1;
-    size_t y = 1;
-    orig.set(x, y, 1);
-    int[] window = [2, 2, 2];
-
-    auto result = orig.moving_average_simple_calculator!(float, int)(x, y, window);
-    assert(result == 1.75, "simple average of 2,2,2 and 1 is 1.75 as expected");
-}
-
-/**
-* Smooth the matrix/height map by averaging values in a window around each element
-*  
-*  
-* Params:
-*   orig       = original Matrix!T matrix
-*   distance   = how far should be the elements to be picked for averaging
-*   shaper     = function which will pick the elements and shape the window
-*                for example a square window will pick elements in a square with the side 2*distance + 1  
-*   calculator = delegate which will calculate the average (plain, weighted, exponential etc.), deal
-*              edges etc.
-*   
-* Returns: a new matrix the same type and size as the original
-*/
-Matrix!U moving_average(T, U)(Matrix!T orig, size_t distance,
-        T[]function(Matrix!T, size_t, size_t, size_t) shaper,
-        U function(Matrix!T, size_t, size_t, T[]) calculator) if (isNumeric!T)
-in
-{
-    assert(distance >= 0);
-}
-do
-{
-    auto result = Matrix!U(orig.width, orig.height);
-
-    for (size_t y = 0; y < orig.height; y++)
-    {
-        for (size_t x = 0; x < orig.width; x++)
-        {
-            auto window = shaper(orig, x, y, distance);
-            U new_element = calculator(orig, x, y, window);
-            result.set(x, y, new_element);
-        }
-    }
-
-    return result;
-}
-
-unittest
-{
-    size_t how_big = 64;
-    auto orig = Matrix!int(random_array!int(64, 0, 255, 12341234), 8);
-    dbg(orig, "moving_average orig ");
-
-    size_t window_size = 2;
-    auto smooth = orig.moving_average!(int, int)(window_size,
-            &shaper_square!int, &moving_average_simple_calculator!(int, int));
-    assert(smooth.height == orig.height);
-    assert(smooth.width == orig.width);
-    dbg(smooth, "smoothed with moving average over square window");
-}
 
 // TODO 
 // https://en.wikipedia.org/wiki/Scaling_(geometry)#Using_homogeneous_coordinates
@@ -834,9 +706,6 @@ do
     double vector_scale_x = new_max_x_index / orig_max_x_index;
     double vector_scale_y = new_max_y_index / orig_max_y_index;
 
-    // SEEME not using a projective transformation matrix but here is
-    //    a link explaining what it is about in case I need to come back
-    // https://www.tomdalling.com/blog/modern-opengl/explaining-homogenous-coordinates-and-projective-geometry/ 
     Matrix!double trans_m = Matrix!double([vector_scale_x, 0, 0, vector_scale_y], 2);
 
     return coordinates.multiply(trans_m).round_elements!(T, size_t)();
