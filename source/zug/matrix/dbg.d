@@ -5,7 +5,7 @@ import std.stdio: writeln;
 import std.range : chunks;
 import std.traits;
 
-import zug.matrix.basic;
+import zug.matrix.generic;
 
 /** 
     Debuging helpers, probably should move to another module 

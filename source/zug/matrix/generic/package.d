@@ -27,7 +27,10 @@ struct Offset
  *
  */
 
-struct Matrix(T) if (isNumeric!T)
+struct Matrix(T)
+//TODO testing generic matrices (should I call them symbolic matrices ? ) 
+// if (isNumeric!T)
+//
 {
 
     T[] data;
@@ -647,13 +650,11 @@ Matrix!T scale(T)(Matrix!T orig, double scale_x, double scale_y)
     auto coordinates = orig.coordinates!double();
     auto scaled_coordinates = scale_coordinates!T(coordinates, orig.width,
             orig.height, scale_x, scale_y);
-    dbg(scaled_coordinates, "coordinates scaled");
 
     size_t new_width = round(orig.width.to!double * scale_x).to!size_t;
     size_t new_height = round(orig.height.to!double * scale_x).to!size_t;
 
     auto result = Matrix!T(new_width, new_height);
-    dbg(result, "result");
 
     for (size_t i = 0; i < scaled_coordinates.height; i++)
     {
@@ -670,6 +671,26 @@ Matrix!T scale(T)(Matrix!T orig, double scale_x, double scale_y)
     }
     return result;
 }
+
+unittest 
+{
+    import std.math: isNaN;
+    auto orig = Matrix!double(
+        [
+            1,1,1,1,
+            1,1,1,1,
+            1,1,1,1,
+            1,1,1,1
+        ],
+        4
+    );
+    auto result = orig.scale(1.5, 1.5);
+    dbg(result, "orig scaled the linear algebra way");
+    assert(result.get( 0, 0 ) == 1);
+    assert( isNaN( result.get( 1, 1 ) ) );
+    assert(result.get( 2, 2 ) == 1);
+    assert( isNaN( result.get( 4, 4 ) ) );
+}   
 
 /**
  * scale_coordinates returns a 2D Matrix!double with the coordinates of each point in the original matrix 
@@ -711,26 +732,13 @@ do
     return coordinates.multiply(trans_m).round_elements!(T, size_t)();
 }
 
-Matrix!R round_elements(T, R)(Matrix!T orig) if (isNumeric!T && isIntegral!R)
-{
-    import std.math : round;
-
-    static if (isIntegral!T)
-    {
-        return orig.copy();
-    }
-    else
-    {
-        auto filter = delegate bool(T i) => true;
-        auto transform = delegate R(T i) => round(i).to!R;
-        return orig.replace_elements!(T, R)(filter, transform);
-    }
-}
-
 
 /// SEEME: is this nearest neighbour interpolation ?
 // returns a new matrix, does not change the old
-Matrix!T enlarge(T)(Matrix!T orig, int scale_x, int scale_y) if (isNumeric!T)
+Matrix!T enlarge(T)(Matrix!T orig, int scale_x, int scale_y) 
+// TODO this needs testing 
+// if (isNumeric!T)
+// but I guess it should work with custom elements too 
 in
 {
     assert(scale_x > 0);
@@ -788,131 +796,3 @@ unittest
 
 }
 
-/**
- * stretch_bilinear can only create an enlarged version of the original, 
- *    else use squeeze (TODO squeeze) 
- * 
- * Params:
- *   orig = Matrix!T,  orignal matrix
- *   scale_x = float, how much to scale horizontally
- *   scale_y = float, how much to scale vertically
- *
- * Returns:
- *   stretched_matrix = Matrix!T, a new matrix with the requested size
- */
-Matrix!T stretch_bilinear(T)(Matrix!T orig, float scale_x, float scale_y)
-in
-{
-    assert(scale_x >= 1 && scale_y >= 1);
-}
-do
-{
-    if (scale_x == 1 && scale_y == 1)
-    {
-        return orig.copy();
-    }
-
-    size_t new_width = (orig.width * scale_x).to!size_t;
-    size_t new_height = (orig.height * scale_y).to!size_t;
-
-    Matrix!T result = Matrix!T(new_width, new_height);
-
-    // double because they're not integers any more after stretching
-    double[] new_vertical_coordinates = stretch_row_coordinates(orig.height, new_height);
-
-    // first get the rows from orig and stretch them and add to result in proper place
-    // then get each column from the result and interpolate missing values
-    size_t original_y = 0;
-    double next_y = 0;
-    size_t[] populated_rows_coordinates;
-    for (size_t i = 0; i < new_height; i++)
-    {
-        if (next_y - i <= next_y % 1)
-        {
-            auto stretched = stretch_row(orig.row(original_y), new_width);
-            result.row(stretched, i);
-            original_y++;
-            populated_rows_coordinates ~= i;
-
-            if (original_y >= orig.height)
-            {
-                break;
-            }
-
-            next_y = new_vertical_coordinates[original_y];
-        }
-    }
-
-    // interpolate between the rows set above rows
-    // need all the known rows to be already set, 
-    //    that's why the interpolation is delayed
-
-    // start from the top set row and interpolate the missing values 
-    //     until the bottom set row
-    size_t top_row_id;
-    size_t bottom_row_id;
-
-    for (size_t i = 0; i < populated_rows_coordinates.length; i++)
-    {
-        if (bottom_row_id == 0)
-        { // first loop
-            top_row_id = populated_rows_coordinates[i];
-            bottom_row_id = populated_rows_coordinates[i + 1];
-            i++;
-        }
-        else
-        {
-            top_row_id = bottom_row_id;
-            bottom_row_id = populated_rows_coordinates[i];
-        }
-
-        // for each column between those two rows calculate the slope
-        // then interpolate all missing elements
-        // TODO: move to a different function
-        for (size_t x = 0; x < new_width; x++)
-        {
-            double top_value = result.get(x, top_row_id).to!double;
-            double bottom_value = result.get(x, bottom_row_id).to!double;
-
-            // calculate the slope once per vertical segment
-            double slope = (bottom_value - top_value).to!double / (bottom_row_id - top_row_id).to!double;
-            double last_computed_value = top_value;
-            // SEEME: can I do this in parallel ?
-            //    maybe if the distance between the populated rows is big enough ?
-            // A: not really, need the last computed value before going on, probably, I think
-            // TODO look into this later
-            for (size_t y = top_row_id + 1; y < bottom_row_id; y++)
-            {
-                // stepping over 1, so just add the slope to save on computations
-                // SEEME: maybe if using only the start, the end and the position in betwee
-                //    I don't need the last_computed_value, so I can make this parallel ?
-                double value = last_computed_value + slope;
-                result.set(x, y, value.to!T);
-                last_computed_value = value;
-            }
-        }
-    }
-    return result;
-}
-
-// TODO visual inspection works fine but add some asserts too
-unittest
-{
-
-    auto orig = Matrix!int([0, 5, 10, 15, 20, 25, 30, 35, 40], 3);
-    dbg(orig.coordinates!float, "old_coords");
-    auto result = orig.stretch_bilinear!int(2, 2);
-    dbg(result, "sssssssssssssssstretch ");
-}
-// TODO visual inspection works fine but add some asserts too
-unittest
-{
-    auto orig = Matrix!float([0.1, 5.3, 11.2, 14.0, 19.8, 15.1, 30.3, 35.1, 41.7], 3);
-    dbg(orig.coordinates!float, "old_coords");
-    auto result = orig.stretch_bilinear!float(2, 2);
-    dbg(result, "sssssssssssssssstretch floats");
-
-    auto large = Matrix!double(sample_2d_array!double(), 18);
-    auto large_result = large.stretch_bilinear!double(3, 3);
-    dbg(large_result, "sssssssssssssssstretch doubles large array");
-}

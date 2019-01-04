@@ -1,6 +1,12 @@
 module zug.matrix.generic.operations;
 
+import std.traits: isNumeric;
 import zug.matrix.generic;
+
+version(unittest)
+{
+    public import zug.matrix.dbg;
+}
 
 Matrix!T transpose(T)(Matrix!T orig) if (isNumeric!T)
 {

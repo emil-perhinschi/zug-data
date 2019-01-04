@@ -1,6 +1,13 @@
 module zug.matrix.numeric.operations;
-import std.traits;
+import std.traits: isNumeric, isIntegral;
+import std.conv: to;
 import zug.matrix.generic;
+import zug.matrix.array_utils;
+
+version(unittest)
+{
+    public import zug.matrix.dbg;
+}
 
 ///
 Matrix!T multiply(T)(Matrix!T first, Matrix!T second) if (isNumeric!T)
@@ -101,10 +108,11 @@ unittest
 
 /// this will work only for numeric 2d matrices 
 //    because of the  "return i.to!R;" inside, TODO have to think about alternatives for the generic code
-Matrix!R replace_elements(T, R)(bool delegate(T) filter, R delegate(T) transform)
+Matrix!R replace_elements(T, R)(Matrix!T orig, bool delegate(T) filter, R delegate(T) transform)
         if (isNumeric!T && isNumeric!R)
 {
     import std.algorithm : map;
+    import std.array;
 
     auto transformer = delegate R(T i) {
         if (filter(i))
@@ -114,9 +122,9 @@ Matrix!R replace_elements(T, R)(bool delegate(T) filter, R delegate(T) transform
         return i.to!R;
     };
 
-    R[] result = map!(transformer)(this.data[0 .. $]).array;
+    R[] result = map!(transformer)(orig.data[0 .. $]).array;
 
-    return Matrix!R(result, this.width);
+    return Matrix!R(result, orig.width);
 }
 
 /// replace_elements
@@ -218,6 +226,7 @@ do
 
 unittest
 {
+    import zug.matrix: random_array;
     size_t how_big = 64;
     auto orig = Matrix!int(random_array!int(64, 0, 255, 12341234), 8);
     dbg(orig, "moving_average orig ");
@@ -229,3 +238,174 @@ unittest
     assert(smooth.width == orig.width);
     dbg(smooth, "smoothed with moving average over square window");
 }
+
+Matrix!R round_elements(T, R)(Matrix!T orig) if (isNumeric!T && isIntegral!R)
+{
+    import std.math : round;
+
+    static if (isIntegral!T)
+    {
+        return orig.copy();
+    }
+    else
+    {
+        auto filter = delegate bool(T i) => true;
+        auto transform = delegate R(T i) => round(i).to!R;
+        return orig.replace_elements!(T, R)(filter, transform);
+    }
+}
+
+unittest 
+{
+    auto orig = Matrix!double(
+        [
+            1.1, 1.6, 1.5,
+            1.0, 1.3, 1.7,
+            1.0, 1.9, 1.8
+        ],
+        3
+    );
+    dbg(orig);
+
+    auto result = orig.round_elements!(double, size_t)();
+    dbg(result);
+    // expected
+    // # [1, 2, 2]
+    // # [1, 1, 2]
+    // # [1, 2, 2]
+    assert(result.get(0,0) == 1);
+    assert(result.get(1,0) == 2);
+    assert(result.get(2,0) == 2);
+    assert(result.get(1,1) == 1);
+}
+
+
+/**
+ * stretch_bilinear can only create an enlarged version of the original, 
+ *    else use squeeze (TODO squeeze) 
+ * 
+ * Params:
+ *   orig = Matrix!T,  orignal matrix
+ *   scale_x = float, how much to scale horizontally
+ *   scale_y = float, how much to scale vertically
+ *
+ * Returns:
+ *   stretched_matrix = Matrix!T, a new matrix with the requested size
+ */
+Matrix!T stretch_bilinear(T)(Matrix!T orig, float scale_x, float scale_y)
+in
+{
+    assert(scale_x >= 1 && scale_y >= 1);
+}
+do
+{
+    if (scale_x == 1 && scale_y == 1)
+    {
+        return orig.copy();
+    }
+
+    size_t new_width = (orig.width * scale_x).to!size_t;
+    size_t new_height = (orig.height * scale_y).to!size_t;
+
+    Matrix!T result = Matrix!T(new_width, new_height);
+
+    // double because they're not integers any more after stretching
+    double[] new_vertical_coordinates = stretch_row_coordinates(orig.height, new_height);
+
+    // first get the rows from orig and stretch them and add to result in proper place
+    // then get each column from the result and interpolate missing values
+    size_t original_y = 0;
+    double next_y = 0;
+    size_t[] populated_rows_coordinates;
+    for (size_t i = 0; i < new_height; i++)
+    {
+        if (next_y - i <= next_y % 1)
+        {
+            auto stretched = stretch_row(orig.row(original_y), new_width);
+            result.row(stretched, i);
+            original_y++;
+            populated_rows_coordinates ~= i;
+
+            if (original_y >= orig.height)
+            {
+                break;
+            }
+
+            next_y = new_vertical_coordinates[original_y];
+        }
+    }
+
+    // interpolate between the rows set above rows
+    // need all the known rows to be already set, 
+    //    that's why the interpolation is delayed
+
+    // start from the top set row and interpolate the missing values 
+    //     until the bottom set row
+    size_t top_row_id;
+    size_t bottom_row_id;
+
+    for (size_t i = 0; i < populated_rows_coordinates.length; i++)
+    {
+        if (bottom_row_id == 0)
+        { // first loop
+            top_row_id = populated_rows_coordinates[i];
+            bottom_row_id = populated_rows_coordinates[i + 1];
+            i++;
+        }
+        else
+        {
+            top_row_id = bottom_row_id;
+            bottom_row_id = populated_rows_coordinates[i];
+        }
+
+        // for each column between those two rows calculate the slope
+        // then interpolate all missing elements
+        // TODO: move to a different function
+        for (size_t x = 0; x < new_width; x++)
+        {
+            double top_value = result.get(x, top_row_id).to!double;
+            double bottom_value = result.get(x, bottom_row_id).to!double;
+
+            // calculate the slope once per vertical segment
+            double slope = (bottom_value - top_value).to!double / (bottom_row_id - top_row_id).to!double;
+            double last_computed_value = top_value;
+            // SEEME: can I do this in parallel ?
+            //    maybe if the distance between the populated rows is big enough ?
+            // A: not really, need the last computed value before going on, probably, I think
+            // TODO look into this later
+            for (size_t y = top_row_id + 1; y < bottom_row_id; y++)
+            {
+                // stepping over 1, so just add the slope to save on computations
+                // SEEME: maybe if using only the start, the end and the position in betwee
+                //    I don't need the last_computed_value, so I can make this parallel ?
+                double value = last_computed_value + slope;
+                result.set(x, y, value.to!T);
+                last_computed_value = value;
+            }
+        }
+    }
+    return result;
+}
+
+// TODO visual inspection works fine but add some asserts too
+unittest
+{
+
+    auto orig = Matrix!int([0, 5, 10, 15, 20, 25, 30, 35, 40], 3);
+    dbg(orig.coordinates!float, "old_coords");
+    auto result = orig.stretch_bilinear!int(2, 2);
+    dbg(result, "sssssssssssssssstretch ");
+}
+// TODO visual inspection works fine but add some asserts too
+unittest
+{
+    auto orig = Matrix!float([0.1, 5.3, 11.2, 14.0, 19.8, 15.1, 30.3, 35.1, 41.7], 3);
+    dbg(orig.coordinates!float, "old_coords");
+    auto result = orig.stretch_bilinear!float(2, 2);
+    dbg(result, "sssssssssssssssstretch floats");
+
+    auto large = Matrix!double(sample_2d_array!double(), 18);
+    auto large_result = large.stretch_bilinear!double(3, 3);
+    dbg(large_result, "sssssssssssssssstretch doubles large array");
+}
+
