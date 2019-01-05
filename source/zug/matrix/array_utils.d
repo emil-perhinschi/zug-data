@@ -6,11 +6,11 @@ import std.conv: to;
 import zug.matrix;
 
 ///
-T[] random_array(T)(size_t size, T min, T max, ulong seed) if (isNumeric!T)
+T[] random_array(T)(size_t size, T min, T max, uint seed) if (isNumeric!T)
 {
     import std.random : Random, uniform;
 
-    auto rnd = Random(42);
+    auto rnd = Random(seed);
     T[] result = new T[](size);
     foreach (size_t i; 0 .. size)
     {
@@ -25,18 +25,19 @@ unittest
     import std.range : take;
     import std.random : Random, uniform;
 
-    auto result = random_array!int(10, 0, 15, 12341234);
+    uint seed = 42;
+    auto result = random_array!int(10, 0, 15, seed);
 
     assert(result[0] == 12);
     assert(result[1] == 2);
 
-    auto result_float = random_array!float(10, 0, 15, 12341234);
+    auto result_float = random_array!float(10, 0, 15, seed);
     // TODO figure out how to check floats, this does not work
     // writeln(result_float);
     // assert(result_float[0] == 5.6181 ); 
 
     size_t how_big = 64;
-    auto orig = Matrix!int(random_array!int(64, 0, 255, 12341234), 8);
+    auto orig = Matrix!int(random_array!int(how_big, 0, 255, seed), 8);
 
     // should look like this
     //      0    1    2    3    4    5    6    7
@@ -68,14 +69,20 @@ unittest
  * Returns:
  *   result = a new array with the values from 1 to the penultimate interpolated 
  */
-T[] segment_linear_interpolation(T)(T[] input) {
+T[] segment_linear_interpolation(T)(T[] input) 
+in
+{
+    assert(input.length >= 3);
+}
+do
+{
     T[] result = input.dup;
 
-    double top_value = input[0].to!double;
-    double bottom_value = input[$ - 1].to!double;
+    immutable double top_value = input[0].to!double;
+    immutable double bottom_value = input[$ - 1].to!double;
 
     // calculate the slope once per vertical segment
-    double slope = (bottom_value - top_value).to!double 
+    immutable double slope = (bottom_value - top_value).to!double 
         / (input.length - 1).to!double;
     double last_computed_value = top_value;
     // SEEME: can I do this in parallel ?
@@ -87,7 +94,7 @@ T[] segment_linear_interpolation(T)(T[] input) {
         // stepping over 1, so just add the slope to save on computations
         // SEEME: maybe if using only the start, the end and the position in betwee
         //    I don't need the last_computed_value, so I can make this parallel ?
-        double value = last_computed_value + slope;
+        immutable double value = last_computed_value + slope;
         result[i] = value;
         last_computed_value = value;
     }
@@ -110,7 +117,7 @@ unittest
 double[] stretch_row_coordinates(size_t orig_length, size_t new_length)
 {
 
-    double spacing = ((new_length.to!double - 1) / (orig_length.to!double - 1));
+    immutable double spacing = ((new_length.to!double - 1) / (orig_length.to!double - 1));
     double[] stretched_coordinates = new double[orig_length];
     for (size_t i = 0; i < orig_length; i++)
     {
@@ -151,10 +158,10 @@ T[] stretch_row(T)(T[] orig, size_t new_length)
         }
         else
         {
-            double slope = (orig[orig_coordinates] - orig[orig_coordinates - 1]).to!double / (
+            immutable double slope = (orig[orig_coordinates] - orig[orig_coordinates - 1]).to!double / (
                     next_coordinates - prev_coordinates);
 
-            double value = orig[orig_coordinates - 1].to!double 
+            immutable double value = orig[orig_coordinates - 1].to!double 
                 + (slope * (i - prev_coordinates)).to!double;
 
             stretched[i] = value.to!T;

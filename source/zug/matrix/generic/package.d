@@ -770,7 +770,8 @@ unittest
     // [10,  7, 12,  4]
     // [ 6,  9,  2,  6]
     // [10, 10,  7,  4]
-    auto orig = Matrix!int(random_array(16, 0, 16, 12_341_234), 4);
+    uint seed = 42;
+    auto orig = Matrix!int(random_array(16, 0, 16, seed), 4);
     dbg(orig, "orig enlarge");
     auto larger = orig.enlarge(2, 2);
     dbg(larger, "larger enlarge");
