@@ -182,7 +182,7 @@ unittest
     orig.set(x, y, 1);
     int[] window = [2, 2, 2];
 
-    auto result = orig.moving_average_simple_calculator!(float, int)(x, y, window);
+    immutable auto result = orig.moving_average_simple_calculator!(float, int)(x, y, window);
     assert(result == 1.75, "simple average of 2,2,2 and 1 is 1.75 as expected");
 }
 
@@ -227,8 +227,8 @@ do
 unittest
 {
     import zug.matrix: random_array;
-    size_t how_big = 64;
-    auto orig = Matrix!int(random_array!int(64, 0, 255, 12341234), 8);
+
+    auto orig = Matrix!int(random_array!int(64, 0, 255, 12_341_234), 8);
     dbg(orig, "moving_average orig ");
 
     size_t window_size = 2;

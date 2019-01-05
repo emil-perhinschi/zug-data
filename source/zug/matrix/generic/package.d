@@ -135,7 +135,7 @@ struct Matrix(T)
     unittest
     {
         // dfmt off
-        int[] data = [
+        int[] orig_data = [
             0, 0, 0, 0, 0, 0,
             0, 1, 1, 1, 1, 0,
             0, 1, 0, 0, 1, 0,
@@ -146,7 +146,7 @@ struct Matrix(T)
         // dfmt on
 
         size_t width = 6;
-        auto orig = Matrix!int(data, width);
+        auto orig = Matrix!int(orig_data, width);
 
         Matrix!int result = orig.dice!int(Offset(1, 1), 4, 4);
         debug dbg!int(result, "dice 1,1->4,4");
@@ -434,8 +434,8 @@ unittest
 unittest
 {
     auto orig = Matrix!double([0, 255, 125], 3);
-    double normal_min = 0;
-    double normal_max = 16;
+    immutable double normal_min = 0;
+    immutable double normal_max = 16;
     auto result = orig.normalize!double(normal_min, normal_max);
 
     assert(result.get(0) == 0);
@@ -459,12 +459,12 @@ U normalize_value(T, U)(T item, T actual_min_value, T actual_max_value, T normal
 /// normalize_value
 unittest
 {
-    int orig = 4;
-    int actual_min_value = 0;
-    int actual_max_value = 16;
-    int normal_min = 0;
-    int normal_max = 255;
-    int result = normalize_value!(int, int)(orig, actual_min_value,
+    immutable int orig = 4;
+    immutable int actual_min_value = 0;
+    immutable int actual_max_value = 16;
+    immutable int normal_min = 0;
+    immutable int normal_max = 255;
+    immutable int result = normalize_value!(int, int)(orig, actual_min_value,
             actual_max_value, normal_min, normal_max);
     assert(result == 63);
 }
@@ -694,8 +694,10 @@ unittest
  * scale_coordinates returns a 2D Matrix!double with the coordinates of each point in the original matrix 
  *   put in the position 
  */
-Matrix!size_t scale_coordinates(T)(Matrix!T coordinates, size_t width,
-        size_t height, double scale_x, double scale_y) if (isNumeric!T)
+Matrix!size_t scale_coordinates(T)(
+    Matrix!T coordinates, size_t width,
+    size_t height, double scale_x, double scale_y
+) if (isNumeric!T)
 in
 {
     // width of two, that is x and y
@@ -714,7 +716,7 @@ do
     immutable double orig_height = height.to!double;
 
     immutable double new_width = round(orig_width * scale_x);
-    immutable double new_height = round(orig_height * scale_x);
+    immutable double new_height = round(orig_height * scale_y);
 
     immutable double orig_max_x_index = orig_width - 1;
     immutable double orig_max_y_index = orig_height - 1;
@@ -730,6 +732,7 @@ do
     return coordinates.multiply(trans_m).round_elements!(T, size_t)();
 }
 
+//TODO unittest for scale_coordinates
 
 /// SEEME: is this nearest neighbour interpolation ?
 // returns a new matrix, does not change the old
@@ -767,7 +770,7 @@ unittest
     // [10,  7, 12,  4]
     // [ 6,  9,  2,  6]
     // [10, 10,  7,  4]
-    auto orig = Matrix!int(random_array(16, 0, 16, 12341234), 4);
+    auto orig = Matrix!int(random_array(16, 0, 16, 12_341_234), 4);
     dbg(orig, "orig enlarge");
     auto larger = orig.enlarge(2, 2);
     dbg(larger, "larger enlarge");

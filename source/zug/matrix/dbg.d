@@ -14,7 +14,7 @@ import zug.matrix.generic;
 
 private bool do_debug()
 {
-    import std.process;
+    import std.process: environment;
 
     if (environment.get("DEBUG") is null)
     {
