@@ -277,7 +277,7 @@ struct Matrix(T)
     {
         size_t first_id = y * width;
         size_t last_id = first_id + width;
-        auto row = this.data[first_id .. last_id] = new_row;
+        this.data[first_id .. last_id] = new_row;
     }
 
     unittest
@@ -316,7 +316,7 @@ struct Matrix(T)
     {
         import std.range : chunks, join;
 
-        auto offset_x_orig = offset.x;
+        immutable auto offset_x_orig = offset.x;
 
         auto chunked = this.data.chunks(this.width);
         T[][] result = new T[][](window_size, window_size);
@@ -406,8 +406,8 @@ unittest
 ///
 Matrix!int normalize(T)(Matrix!T orig, T normal_min, T normal_max) if (isNumeric!T)
 {
-    import std.array;
-    import std.algorithm;
+    import std.array: array;
+    import std.algorithm: map;
 
     auto min = orig.min;
     auto max = orig.max;
@@ -421,8 +421,8 @@ Matrix!int normalize(T)(Matrix!T orig, T normal_min, T normal_max) if (isNumeric
 unittest
 {
     auto orig = Matrix!float([1.1, 100.1, 50.1], 3);
-    float normal_min = 0.0;
-    float normal_max = 16.0;
+    immutable float normal_min = 0.0;
+    immutable float normal_max = 16.0;
     auto result = orig.normalize!float(normal_min, normal_max);
 
     assert(result.get(0) == 0);
@@ -447,8 +447,6 @@ unittest
 U normalize_value(T, U)(T item, T actual_min_value, T actual_max_value, T normal_min, T normal_max)
         if (isNumeric!T)
 {
-    import std.math;
-
     if (normal_min == normal_max)
     {
         throw new Error("the normal min and max values are equal");
@@ -497,18 +495,18 @@ in
 do
 {
     // close to the left edge
-    size_t start_x = x < distance ? 0 : x - distance;
+    immutable size_t start_x = x < distance ? 0 : x - distance;
 
     // close to the top edge
-    size_t start_y = y < distance ? 0 : y - distance;
+    immutable size_t start_y = y < distance ? 0 : y - distance;
 
     // close to the right edge
-    size_t max_x = orig.width - 1;
-    size_t end_x = x + distance >= max_x ? max_x : x + distance;
+    immutable size_t max_x = orig.width - 1;
+    immutable size_t end_x = x + distance >= max_x ? max_x : x + distance;
 
     // close to the bottom edge
-    size_t max_y = orig.height - 1;
-    size_t end_y = y + distance >= max_y ? max_y : y + distance;
+    immutable size_t max_y = orig.height - 1;
+    immutable size_t end_y = y + distance >= max_y ? max_y : y + distance;
 
     T[] result;
     for (size_t i = start_y; i < end_y + 1; i++)
@@ -583,13 +581,13 @@ do
     import std.math : sqrt, round;
 
     // close to the left edge
-    size_t start_x = x < distance ? 0 : x - distance;
+    immutable size_t start_x = x < distance ? 0 : x - distance;
     // close to the top edge
-    size_t start_y = y < distance ? 0 : y - distance;
+    immutable size_t start_y = y < distance ? 0 : y - distance;
     // close to the right edge
-    size_t end_x = distance + x > orig.width ? orig.width : x + distance;
+    immutable size_t end_x = distance + x > orig.width ? orig.width : x + distance;
     // close to the bottom edge
-    size_t end_y = distance + y > orig.height ? orig.height : y + distance;
+    immutable size_t end_y = distance + y > orig.height ? orig.height : y + distance;
 
     T[] result;
     for (size_t i = start_y; i < end_y + 1; i++)
@@ -602,7 +600,7 @@ do
                 // this will allow for weighting
                 continue;
             }
-            real how_far = sqrt(((x - j) * (x - j) + (y - i) * (y - i)).to!real);
+            immutable real how_far = sqrt(((x - j) * (x - j) + (y - i) * (y - i)).to!real);
             if (round(how_far) <= distance)
             {
                 result ~= orig.get(j, i);
@@ -712,20 +710,20 @@ do
     // very detailed steps because I keep forgetting this and revert to thinking in 
     //   scaling images instead of thinking in terms of vectors
 
-    double orig_width = width.to!double;
-    double orig_height = height.to!double;
+    immutable double orig_width = width.to!double;
+    immutable double orig_height = height.to!double;
 
-    double new_width = round(orig_width * scale_x);
-    double new_height = round(orig_height * scale_x);
+    immutable double new_width = round(orig_width * scale_x);
+    immutable double new_height = round(orig_height * scale_x);
 
-    double orig_max_x_index = orig_width - 1;
-    double orig_max_y_index = orig_height - 1;
+    immutable double orig_max_x_index = orig_width - 1;
+    immutable double orig_max_y_index = orig_height - 1;
 
-    double new_max_x_index = new_width - 1;
-    double new_max_y_index = new_height - 1;
+    immutable double new_max_x_index = new_width - 1;
+    immutable double new_max_y_index = new_height - 1;
 
-    double vector_scale_x = new_max_x_index / orig_max_x_index;
-    double vector_scale_y = new_max_y_index / orig_max_y_index;
+    immutable double vector_scale_x = new_max_x_index / orig_max_x_index;
+    immutable double vector_scale_y = new_max_y_index / orig_max_y_index;
 
     Matrix!double trans_m = Matrix!double([vector_scale_x, 0, 0, vector_scale_y], 2);
 
@@ -751,7 +749,7 @@ do
     size_t new_height = orig.height * scale_y;
     auto result = Matrix!T(new_width, new_height);
 
-    size_t full_length = new_width * new_height;
+    immutable size_t full_length = new_width * new_height;
     for (size_t i = 0; i < full_length; i++)
     {
         auto orig_x = (i % new_width) / scale_x; // SEEME .to!size_t ??

@@ -112,7 +112,7 @@ Matrix!R replace_elements(T, R)(Matrix!T orig, bool delegate(T) filter, R delega
         if (isNumeric!T && isNumeric!R)
 {
     import std.algorithm : map;
-    import std.array;
+    import std.array: array;
 
     auto transformer = delegate R(T i) {
         if (filter(i))
@@ -363,11 +363,11 @@ do
         // TODO: move to a different function
         for (size_t x = 0; x < new_width; x++)
         {
-            double top_value = result.get(x, top_row_id).to!double;
-            double bottom_value = result.get(x, bottom_row_id).to!double;
+            immutable double top_value = result.get(x, top_row_id).to!double;
+            immutable double bottom_value = result.get(x, bottom_row_id).to!double;
 
             // calculate the slope once per vertical segment
-            double slope = (bottom_value - top_value).to!double / (bottom_row_id - top_row_id).to!double;
+            immutable double slope = (bottom_value - top_value).to!double / (bottom_row_id - top_row_id).to!double;
             double last_computed_value = top_value;
             // SEEME: can I do this in parallel ?
             //    maybe if the distance between the populated rows is big enough ?
@@ -378,7 +378,7 @@ do
                 // stepping over 1, so just add the slope to save on computations
                 // SEEME: maybe if using only the start, the end and the position in betwee
                 //    I don't need the last_computed_value, so I can make this parallel ?
-                double value = last_computed_value + slope;
+                immutable double value = last_computed_value + slope;
                 result.set(x, y, value.to!T);
                 last_computed_value = value;
             }
