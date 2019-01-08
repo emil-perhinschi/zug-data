@@ -3,7 +3,12 @@ module zug.matrix.array_utils;
 import std.traits;
 import std.conv: to;
 
-import zug.matrix;
+import zug.matrix.generic;
+version(unittest)
+{
+    public import zug.matrix.dbg;
+}
+
 
 ///
 T[] random_array(T)(size_t size, T min, T max, uint seed) if (isNumeric!T)

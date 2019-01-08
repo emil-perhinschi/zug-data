@@ -27,8 +27,7 @@ struct Offset
  *
  */
 
-struct Matrix(T)
-//TODO testing generic matrices (should I call them symbolic matrices ? ) 
+struct Matrix(T) //TODO testing generic matrices (should I call them symbolic matrices ? ) 
 // if (isNumeric!T)
 //
 {
@@ -97,72 +96,6 @@ struct Matrix(T)
     size_t data_length()
     {
         return this.data.length;
-    }
-
-    ///
-    T min()
-    {
-        import std.algorithm.searching : minElement;
-
-        return this.data.minElement;
-    }
-
-    ///
-    T max()
-    {
-        import std.algorithm.searching : maxElement;
-
-        return this.data.maxElement;
-    }
-
-    ///
-    Matrix!T dice(T)(Offset offset, size_t width, size_t height)
-    {
-        import std.range : chunks;
-
-        auto chunked = this.data.chunks(this.width);
-
-        T[] result;
-
-        foreach (T[] row; chunked[offset.y .. (offset.y + height)])
-        {
-            result ~= row[offset.x .. (offset.x + width)].dup;
-        }
-
-        return Matrix!T(result, width);
-    }
-    /// 
-    unittest
-    {
-        // dfmt off
-        int[] orig_data = [
-            0, 0, 0, 0, 0, 0,
-            0, 1, 1, 1, 1, 0,
-            0, 1, 0, 0, 1, 0,
-            0, 1, 0, 0, 1, 0,
-            0, 1, 1, 1, 1, 0,
-            0, 0, 0, 0, 0, 0
-        ];
-        // dfmt on
-
-        size_t width = 6;
-        auto orig = Matrix!int(orig_data, width);
-
-        Matrix!int result = orig.dice!int(Offset(1, 1), 4, 4);
-        debug dbg!int(result, "dice 1,1->4,4");
-        foreach (size_t i; 0 .. 4)
-        {
-            assert(result.get(1) == 1);
-        }
-        assert(result.get(1) == 1);
-        assert(result.get(5) == 0);
-        assert(result.get(6) == 0);
-        assert(result.get(7) == 1);
-
-        auto small = orig.dice!int(Offset(0, 0), 2, 2);
-        dbg(small, "2x2 dice");
-        assert(small.height == 2);
-        assert(small.width == 2);
     }
 
     // https://en.wikipedia.org/wiki/Scaling_(geometry)#Using_homogeneous_coordinates
@@ -403,11 +336,38 @@ unittest
     assert(orig.get(2, 3) == 11, "get 2,3");
 }
 
+bool equal(T)(Matrix!T first, Matrix!T second)
+{
+    static import std.algorithm;
+// dfmt off
+    if (
+        std.algorithm.equal(first.data, second.data)
+        && second.width == second.width 
+        && first.height == second.height
+    )
+    {
+        return true;
+    }
+// dfmt on
+    return false;
+}
+
+unittest 
+{
+    Matrix!int first = Matrix!int( [1,2,3,4],2 );
+    Matrix!int second = Matrix!int( [1,2,3,4],2 );
+    assert(first.equal(second));
+    assert(second.equal(first));
+    second.set(0,0,100);
+    assert(!first.equal(second));
+    assert(!second.equal(first));
+}
+
 ///
 Matrix!int normalize(T)(Matrix!T orig, T normal_min, T normal_max) if (isNumeric!T)
 {
-    import std.array: array;
-    import std.algorithm: map;
+    import std.array : array;
+    import std.algorithm : map;
 
     auto min = orig.min;
     auto max = orig.max;
@@ -623,7 +583,6 @@ unittest
     assert(window[1] == 0, "unchanged element in orig is in the expected spot");
 }
 
-
 // TODO 
 // https://en.wikipedia.org/wiki/Scaling_(geometry)#Using_homogeneous_coordinates
 /**
@@ -670,34 +629,25 @@ Matrix!T scale(T)(Matrix!T orig, double scale_x, double scale_y)
     return result;
 }
 
-unittest 
+unittest
 {
-    import std.math: isNaN;
-    auto orig = Matrix!double(
-        [
-            1,1,1,1,
-            1,1,1,1,
-            1,1,1,1,
-            1,1,1,1
-        ],
-        4
-    );
+    import std.math : isNaN;
+
+    auto orig = Matrix!double([1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1], 4);
     auto result = orig.scale(1.5, 1.5);
     dbg(result, "orig scaled the linear algebra way");
-    assert(result.get( 0, 0 ) == 1);
-    assert( isNaN( result.get( 1, 1 ) ) );
-    assert(result.get( 2, 2 ) == 1);
-    assert( isNaN( result.get( 4, 4 ) ) );
-}   
+    assert(result.get(0, 0) == 1);
+    assert(isNaN(result.get(1, 1)));
+    assert(result.get(2, 2) == 1);
+    assert(isNaN(result.get(4, 4)));
+}
 
 /**
  * scale_coordinates returns a 2D Matrix!double with the coordinates of each point in the original matrix 
  *   put in the position 
  */
-Matrix!size_t scale_coordinates(T)(
-    Matrix!T coordinates, size_t width,
-    size_t height, double scale_x, double scale_y
-) if (isNumeric!T)
+Matrix!size_t scale_coordinates(T)(Matrix!T coordinates, size_t width,
+        size_t height, double scale_x, double scale_y) if (isNumeric!T)
 in
 {
     // width of two, that is x and y
@@ -736,10 +686,12 @@ do
 
 /// SEEME: is this nearest neighbour interpolation ?
 // returns a new matrix, does not change the old
-Matrix!T enlarge(T)(Matrix!T orig, int scale_x, int scale_y) 
-// TODO this needs testing 
+Matrix!T enlarge(T)(Matrix!T orig, int scale_x, int scale_y) // TODO this needs testing 
 // if (isNumeric!T)
 // but I guess it should work with custom elements too 
+
+
+
 in
 {
     assert(scale_x > 0);
@@ -797,4 +749,3 @@ unittest
     dbg(larger_still, "larger_still enlarge");
 
 }
-

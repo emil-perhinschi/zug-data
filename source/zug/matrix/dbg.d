@@ -21,7 +21,7 @@ private bool do_debug()
         return false;
     }
 
-    int can_debug = environment.get("DEBUG").to!int;
+    immutable int can_debug = environment.get("DEBUG").to!int;
 
     if (can_debug == 0)
     {

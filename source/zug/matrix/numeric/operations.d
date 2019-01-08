@@ -1,13 +1,32 @@
 module zug.matrix.numeric.operations;
-import std.traits: isNumeric, isIntegral;
-import std.conv: to;
+import std.traits : isNumeric, isIntegral;
+import std.conv : to;
 import zug.matrix.generic;
 import zug.matrix.array_utils;
 
-version(unittest)
+version (unittest)
 {
     public import zug.matrix.dbg;
 }
+
+///
+T min(T)(Matrix!T orig)
+if (isNumeric!T)
+{
+    import std.algorithm.searching : minElement;
+
+    return orig.data.minElement;
+}
+
+///
+T max(T)(Matrix!T orig)
+if (isNumeric!T)
+{
+    import std.algorithm.searching : maxElement;
+
+    return orig.data.maxElement;
+}
+
 
 ///
 Matrix!T multiply(T)(Matrix!T first, Matrix!T second) if (isNumeric!T)
@@ -105,14 +124,13 @@ unittest
     assert(result.get(3) == 10);
 }
 
-
 /// this will work only for numeric 2d matrices 
 //    because of the  "return i.to!R;" inside, TODO have to think about alternatives for the generic code
 Matrix!R replace_elements(T, R)(Matrix!T orig, bool delegate(T) filter, R delegate(T) transform)
         if (isNumeric!T && isNumeric!R)
 {
     import std.algorithm : map;
-    import std.array: array;
+    import std.array : array;
 
     auto transformer = delegate R(T i) {
         if (filter(i))
@@ -144,7 +162,6 @@ unittest
     assert(result.get(4) == 7);
 }
 
-
 /**
 *  Simple moving average calculator callback, the default callback passed to the moving_average function
 *
@@ -157,7 +174,7 @@ unittest
 *  Returns: a number of the type U specified when calling the function
 */
 U moving_average_simple_calculator(U, T)(Matrix!T orig, size_t x, size_t y, T[] window)
-    if (isNumeric!T)
+        if (isNumeric!T)
 {
     import std.algorithm.iteration : sum;
 
@@ -226,7 +243,7 @@ do
 
 unittest
 {
-    import zug.matrix: random_array;
+    import zug.matrix : random_array;
 
     auto orig = Matrix!int(random_array!int(64, 0, 255, 12_341_234), 8);
     dbg(orig, "moving_average orig ");
@@ -255,16 +272,9 @@ Matrix!R round_elements(T, R)(Matrix!T orig) if (isNumeric!T && isIntegral!R)
     }
 }
 
-unittest 
+unittest
 {
-    auto orig = Matrix!double(
-        [
-            1.1, 1.6, 1.5,
-            1.0, 1.3, 1.7,
-            1.0, 1.9, 1.8
-        ],
-        3
-    );
+    auto orig = Matrix!double([1.1, 1.6, 1.5, 1.0, 1.3, 1.7, 1.0, 1.9, 1.8], 3);
     dbg(orig);
 
     auto result = orig.round_elements!(double, size_t)();
@@ -273,12 +283,11 @@ unittest
     // # [1, 2, 2]
     // # [1, 1, 2]
     // # [1, 2, 2]
-    assert(result.get(0,0) == 1);
-    assert(result.get(1,0) == 2);
-    assert(result.get(2,0) == 2);
-    assert(result.get(1,1) == 1);
+    assert(result.get(0, 0) == 1);
+    assert(result.get(1, 0) == 2);
+    assert(result.get(2, 0) == 2);
+    assert(result.get(1, 1) == 1);
 }
-
 
 /**
  * stretch_bilinear can only create an enlarged version of the original, 
@@ -367,7 +376,8 @@ do
             immutable double bottom_value = result.get(x, bottom_row_id).to!double;
 
             // calculate the slope once per vertical segment
-            immutable double slope = (bottom_value - top_value).to!double / (bottom_row_id - top_row_id).to!double;
+            immutable double slope = (bottom_value - top_value).to!double / (
+                    bottom_row_id - top_row_id).to!double;
             double last_computed_value = top_value;
             // SEEME: can I do this in parallel ?
             //    maybe if the distance between the populated rows is big enough ?
@@ -408,4 +418,29 @@ unittest
     auto large_result = large.stretch_bilinear!double(3, 3);
     dbg(large_result, "sssssssssssssssstretch doubles large array");
 }
+
+T determinant2x2(T)(Matrix!T orig) if (isNumeric!T)
+in
+{
+    assert(orig.width == orig.height, "matrix must be square");
+    assert(orig.width == 2, "matrix must be 2x2");
+}
+do
+{
+    return ((orig.get(0, 0) * orig.get(1, 1)) - (orig.get(0, 1) * orig.get(1, 0)));
+}
+
+unittest
+{
+    import std.stdio : writeln;
+
+    auto orig = Matrix!int([3, 8, 4, 6], 2);
+    auto determinant = orig.determinant2x2();
+    assert(determinant == -14);
+    debug writeln("# determinant is ", determinant);
+}
+
+// TODO determinant of matrix larger than 2x2
+
+
 
