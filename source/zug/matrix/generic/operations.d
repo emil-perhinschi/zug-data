@@ -8,7 +8,7 @@ version (unittest)
     public import zug.matrix.dbg;
 }
 
-Matrix!T transpose(T)(Matrix!T orig) if (isNumeric!T)
+Matrix!T transpose(T)(Matrix!T orig) pure if (isNumeric!T)
 {
     auto result = Matrix!T(orig.height, orig.width);
     for (size_t y = 0; y < orig.height; y++)
@@ -77,9 +77,8 @@ unittest
     }
 }
 
-
 /// returns a matrix of matrices
-Matrix!(Matrix!T) get_minors(T)(Matrix!T orig)
+Matrix!(Matrix!T) get_minors(T)(Matrix!T orig) pure
 {
     auto result = Matrix!(Matrix!T)(orig.width, orig.height);
 
@@ -87,12 +86,13 @@ Matrix!(Matrix!T) get_minors(T)(Matrix!T orig)
     {
         for (size_t x = 0; x < orig.width; x++)
         {
-            result.set(x,y, orig.get_minor(x,y));
+            result.set(x, y, orig.get_minor(x, y));
         }
     }
     return result;
 }
-unittest 
+
+unittest
 {
     // dfmt off
     auto orig = Matrix!int(
@@ -108,19 +108,19 @@ unittest
     auto minors = orig.get_minors();
 
     auto expected_0_0 = Matrix!int([5, 6, 8, 9], 2);
-    assert(minors.get(0,0).equal(expected_0_0));
+    assert(minors.get(0, 0).equal(expected_0_0));
 
     auto expected_1_0 = Matrix!int([4, 6, 7, 9], 2);
-    assert(minors.get(1,0).equal(expected_1_0));
+    assert(minors.get(1, 0).equal(expected_1_0));
 
     auto expected_2_0 = Matrix!int([4, 5, 7, 8], 2);
-    assert(minors.get(2,0).equal(expected_2_0));
+    assert(minors.get(2, 0).equal(expected_2_0));
 
     auto expected_0_1 = Matrix!int([2, 3, 8, 9], 2);
-    assert(minors.get(0,1).equal(expected_0_1));
+    assert(minors.get(0, 1).equal(expected_0_1));
 }
 
-Matrix!T get_minor(T)(Matrix!T orig, size_t exclude_x, size_t exclude_y)
+Matrix!T get_minor(T)(Matrix!T orig, size_t exclude_x, size_t exclude_y) pure
 {
     Matrix!T result = Matrix!T(orig.width - 1, orig.height - 1);
     size_t new_x = 0;
@@ -152,27 +152,27 @@ unittest
 
     auto orig = Matrix!int([1, 2, 3, 4, 5, 6, 7, 8, 9], 3);
 
-    auto minor_0_0    = orig.get_minor(0, 0);
+    auto minor_0_0 = orig.get_minor(0, 0);
     auto expected_0_0 = Matrix!int([5, 6, 8, 9], 2);
-    assert( minor_0_0.equal(expected_0_0) );
+    assert(minor_0_0.equal(expected_0_0));
 
-    auto minor_1_0    = orig.get_minor(1, 0);
+    auto minor_1_0 = orig.get_minor(1, 0);
     auto expected_1_0 = Matrix!int([4, 6, 7, 9], 2);
-    assert( minor_1_0.equal(expected_1_0) );
+    assert(minor_1_0.equal(expected_1_0));
 
-    auto minor_2_0    = orig.get_minor(2, 0);
+    auto minor_2_0 = orig.get_minor(2, 0);
     auto expected_2_0 = Matrix!int([4, 5, 7, 8], 2);
-    assert( minor_2_0.equal(expected_2_0) );
+    assert(minor_2_0.equal(expected_2_0));
 
-    auto minor_0_1    = orig.get_minor(0, 1);
+    auto minor_0_1 = orig.get_minor(0, 1);
     auto expected_0_1 = Matrix!int([2, 3, 8, 9], 2);
-    assert( minor_0_1.equal(expected_0_1) );
+    assert(minor_0_1.equal(expected_0_1));
 }
 
 // TODO list minors of matrix
 
 ///
-Matrix!T dice(T)(Matrix!T orig, Offset offset, size_t width, size_t height)
+Matrix!T dice(T)(Matrix!T orig, Offset offset, size_t width, size_t height) pure
 {
     import std.range : chunks;
 
@@ -219,4 +219,217 @@ unittest
     dbg(small, "2x2 dice");
     assert(small.height == 2);
     assert(small.width == 2);
+}
+
+Matrix!T enlarge(T)(Matrix!T orig, int scale_x, int scale_y) pure
+in
+{
+    assert(scale_x > 1);
+    assert(scale_y > 1);
+}
+do
+{
+
+    size_t new_width = orig.width * scale_x;
+    size_t new_height = orig.height * scale_y;
+    auto result = Matrix!T(new_width, new_height);
+
+    immutable size_t full_length = new_width * new_height;
+    for (size_t i = 0; i < full_length; i++)
+    {
+        auto orig_x = (i % new_width) / scale_x; // SEEME .to!size_t ??
+        auto orig_y = (i / new_width) / scale_y; // SEEME .to!size_t ??
+        result.set(i, orig.get(orig_x, orig_y));
+    }
+
+    return result;
+}
+
+unittest
+{
+    import zug.matrix.array_utils : random_array;
+
+    // orig 
+    // [ 6,  3, 12, 14]
+    // [10,  7, 12,  4]
+    // [ 6,  9,  2,  6]
+    // [10, 10,  7,  4]
+    uint seed = 42;
+    auto orig = Matrix!int(random_array(16, 0, 16, seed), 4);
+    dbg(orig, "orig enlarge");
+    auto larger = orig.enlarge(2, 2);
+    dbg(larger, "larger enlarge");
+
+    // dfmt off 
+    int[] expected_data = [ 
+        6,  6,  3,  3, 12, 12, 14, 14,
+        6,  6,  3,  3, 12, 12, 14, 14,
+       10, 10,  7,  7, 12, 12,  4,  4,
+       10, 10,  7,  7, 12, 12,  4,  4,
+        6,  6,  9,  9,  2,  2,  6,  6,
+        6,  6,  9,  9,  2,  2,  6,  6,
+       10, 10, 10, 10,  7,  7,  4,  4,
+       10, 10, 10, 10,  7,  7,  4,  4
+    ];
+    // dfmt on
+
+    import std.algorithm.comparison : equal;
+
+    assert(equal(larger.data, expected_data));
+
+    auto larger_still = orig.enlarge(3, 3);
+    dbg(larger_still, "larger_still enlarge");
+
+}
+
+/**
+* Pick elements of a matrix around an element in a square shape whose sides
+*    are equal with 2*distance + 1 .
+*    
+* This is the default shaper for the moving_average function
+* 
+* Params:
+*   orig     = original matrix
+*   x        = x coordinate for the current element in orig
+*   y        = y coordinate for the current element in orig
+*   distance = how large should be the window
+
+* Returns: an array of elements picked, not including the current element
+*/
+
+T[] shaper_square(T)(Matrix!T orig, size_t x, size_t y, size_t distance) pure
+in
+{
+    assert(distance > 0, "distance must be positive");
+    assert(distance < orig.height, "window must be smaller than the height of the orignal");
+    assert(distance < orig.width, "window must be smaller than the width of the original");
+}
+do
+{
+    // close to the left edge
+    immutable size_t start_x = x < distance ? 0 : x - distance;
+
+    // close to the top edge
+    immutable size_t start_y = y < distance ? 0 : y - distance;
+
+    // close to the right edge
+    immutable size_t max_x = orig.width - 1;
+    immutable size_t end_x = x + distance >= max_x ? max_x : x + distance;
+
+    // close to the bottom edge
+    immutable size_t max_y = orig.height - 1;
+    immutable size_t end_y = y + distance >= max_y ? max_y : y + distance;
+
+    T[] result;
+    for (size_t i = start_y; i < end_y + 1; i++)
+    {
+        for (size_t j = start_x; j < end_x + 1; j++)
+        {
+            if (i == y && j == x)
+            {
+                // don't add the element around which the window is built
+                // this will allow for weighting
+                continue;
+            }
+            result ~= orig.get(j, i);
+        }
+    }
+    return result;
+}
+
+unittest
+{
+    Matrix!int orig = Matrix!int(8, 8);
+    // change one element, enable testing if it is in the right position
+    orig.set(3, 3, 1);
+    auto window = orig.shaper_square(4, 4, 1);
+
+    dbg(window, 1, "shaper_square(4,4,1)");
+    assert(window.length == 8, "got 8 elements in the window");
+    assert(window[0] == 1, "changed element in orig is in the expected spot");
+    assert(window[1] == 0, "unchanged element in orig is in the expected spot");
+
+    auto larger_window = orig.shaper_square(4, 4, 2);
+    assert(larger_window.length == 24, "got 24 elements in the larger window");
+    assert(larger_window[6] == 1, "changed element in orig is in the expected spot");
+    assert(larger_window[7] == 0, "unchanged element in orig is in the expected spot");
+    dbg(larger_window, 1, "shaper_square(4,4,2)");
+
+    auto left_top_corner_window = orig.shaper_square(0, 0, 2);
+    assert(left_top_corner_window.length == 8);
+
+    auto bottom_right_corner_window = orig.shaper_square(7, 7, 2);
+    assert(bottom_right_corner_window.length == 8);
+}
+
+/**
+* Pick elements of a matrix around an element in a round shape whose radius is 
+*   equal or less than the distance. It reduces the number of elements to 
+*   check by getting a square window first; if the rounded (std.math.round) 
+*   distance between the reference element and the inspected element is less 
+*   or equal with the distance parameter the element is selected for the window.
+*
+* This is the default shaper for the moving_average function
+*
+* Params:
+*   orig     = original matrix
+*   x        = x coordinate for the current element in orig
+*   y        = y coordinate for the current element in orig
+*   distance = how large should be the window
+*
+* Returns: an array of elements picked, not including the current element
+*/
+T[] shaper_circle(T)(Matrix!T orig, size_t x, size_t y, size_t distance) pure
+in
+{
+    assert(distance > 0, "distance must be positive");
+    assert(distance < orig.height, "window must be smaller than the height of the orignal");
+    assert(distance < orig.width, "window must be smaller than the width of the original");
+}
+do
+{
+    import std.math : sqrt, round;
+    import std.conv : to;
+
+    // close to the left edge
+    immutable size_t start_x = x < distance ? 0 : x - distance;
+    // close to the top edge
+    immutable size_t start_y = y < distance ? 0 : y - distance;
+    // close to the right edge
+    immutable size_t end_x = distance + x > orig.width ? orig.width : x + distance;
+    // close to the bottom edge
+    immutable size_t end_y = distance + y > orig.height ? orig.height : y + distance;
+
+    T[] result;
+    for (size_t i = start_y; i < end_y + 1; i++)
+    {
+        for (size_t j = start_x; j < end_x + 1; j++)
+        {
+            if (i == y && j == x)
+            {
+                // don't add the element around which the window is built
+                // this will allow for weighting
+                continue;
+            }
+            immutable real how_far = sqrt(((x - j) * (x - j) + (y - i) * (y - i)).to!real);
+            if (round(how_far) <= distance)
+            {
+                result ~= orig.get(j, i);
+            }
+        }
+    }
+    return result;
+}
+
+unittest
+{
+    Matrix!int orig = Matrix!int(8, 8);
+    // change one element, enable testing if it is in the right position
+    orig.set(3, 3, 1);
+    auto window = orig.shaper_circle(4, 4, 2);
+
+    dbg(window, 1, "shaper_circle(4,4,2)");
+    assert(window.length == 20, "got 8 elements in the window");
+    assert(window[4] == 1, "changed element in orig is in the expected spot");
+    assert(window[1] == 0, "unchanged element in orig is in the expected spot");
 }

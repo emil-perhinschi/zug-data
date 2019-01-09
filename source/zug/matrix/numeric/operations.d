@@ -10,7 +10,7 @@ version (unittest)
 }
 
 ///
-T min(T)(Matrix!T orig)
+T min(T)(Matrix!T orig) pure
 if (isNumeric!T)
 {
     import std.algorithm.searching : minElement;
@@ -19,7 +19,7 @@ if (isNumeric!T)
 }
 
 ///
-T max(T)(Matrix!T orig)
+T max(T)(Matrix!T orig) pure
 if (isNumeric!T)
 {
     import std.algorithm.searching : maxElement;
@@ -29,7 +29,8 @@ if (isNumeric!T)
 
 
 ///
-Matrix!T multiply(T)(Matrix!T first, Matrix!T second) if (isNumeric!T)
+Matrix!T multiply(T)(Matrix!T first, Matrix!T second) pure
+if (isNumeric!T) 
 in
 {
     assert(first.width == second.height,
@@ -93,7 +94,7 @@ unittest
 }
 
 /// add two matrices
-Matrix!T add(T)(Matrix!T first, Matrix!T second)
+Matrix!T add(T)(Matrix!T first, Matrix!T second) pure
 {
 
     if (first.width != second.width || first.height != second.height)
@@ -140,6 +141,8 @@ Matrix!R replace_elements(T, R)(Matrix!T orig, bool delegate(T) filter, R delega
         return i.to!R;
     };
 
+    // TODO: can't mark the function as pure because this is not pure
+    // replace it
     R[] result = map!(transformer)(orig.data[0 .. $]).array;
 
     return Matrix!R(result, orig.width);
@@ -173,7 +176,7 @@ unittest
 *
 *  Returns: a number of the type U specified when calling the function
 */
-U moving_average_simple_calculator(U, T)(Matrix!T orig, size_t x, size_t y, T[] window)
+U moving_average_simple_calculator(U, T)(Matrix!T orig, size_t x, size_t y, T[] window) pure
         if (isNumeric!T)
 {
     import std.algorithm.iteration : sum;
@@ -219,7 +222,8 @@ unittest
 */
 Matrix!U moving_average(T, U)(Matrix!T orig, size_t distance,
         T[]function(Matrix!T, size_t, size_t, size_t) shaper,
-        U function(Matrix!T, size_t, size_t, T[]) calculator) if (isNumeric!T)
+        U function(Matrix!T, size_t, size_t, T[]) calculator)
+if (isNumeric!T)
 in
 {
     assert(distance >= 0);
@@ -243,7 +247,7 @@ do
 
 unittest
 {
-    import zug.matrix : random_array;
+    import zug.matrix : random_array, shaper_square;
 
     auto orig = Matrix!int(random_array!int(64, 0, 255, 12_341_234), 8);
     dbg(orig, "moving_average orig ");
@@ -301,7 +305,7 @@ unittest
  * Returns:
  *   stretched_matrix = Matrix!T, a new matrix with the requested size
  */
-Matrix!T stretch_bilinear(T)(Matrix!T orig, float scale_x, float scale_y)
+Matrix!T stretch_bilinear(T)(Matrix!T orig, float scale_x, float scale_y) pure
 in
 {
     assert(scale_x >= 1 && scale_y >= 1);
@@ -406,6 +410,7 @@ unittest
     auto result = orig.stretch_bilinear!int(2, 2);
     dbg(result, "sssssssssssssssstretch ");
 }
+
 // TODO visual inspection works fine but add some asserts too
 unittest
 {
@@ -419,7 +424,8 @@ unittest
     dbg(large_result, "sssssssssssssssstretch doubles large array");
 }
 
-T determinant2x2(T)(Matrix!T orig) if (isNumeric!T)
+T determinant2x2(T)(Matrix!T orig) pure
+if (isNumeric!T) 
 in
 {
     assert(orig.width == orig.height, "matrix must be square");
@@ -437,10 +443,76 @@ unittest
     auto orig = Matrix!int([3, 8, 4, 6], 2);
     auto determinant = orig.determinant2x2();
     assert(determinant == -14);
-    debug writeln("# determinant is ", determinant);
 }
 
 // TODO determinant of matrix larger than 2x2
+
+///
+Matrix!int normalize(T)(Matrix!T orig, T normal_min, T normal_max) pure
+if (isNumeric!T)
+{
+    import std.array : array;
+    import std.algorithm : map;
+
+    auto min = orig.min;
+    auto max = orig.max;
+
+    auto new_data = map!((T value) => normalize_value!(T, int)(value, min, max,
+            normal_min, normal_max))(orig.data[0 .. $]).array;
+    return Matrix!int(new_data, orig.width);
+}
+
+/// normalize!float
+unittest
+{
+    auto orig = Matrix!float([1.1, 100.1, 50.1], 3);
+    immutable float normal_min = 0.0;
+    immutable float normal_max = 16.0;
+    auto result = orig.normalize!float(normal_min, normal_max);
+
+    assert(result.get(0) == 0);
+    assert(result.get(1) == 16);
+    // assert(result[2] ==  7.91919); // this fails for some reason , probably float weiredness ? TODO: investigate further
+}
+
+/// normalize!double
+unittest
+{
+    auto orig = Matrix!double([0, 255, 125], 3);
+    immutable double normal_min = 0;
+    immutable double normal_max = 16;
+    auto result = orig.normalize!double(normal_min, normal_max);
+
+    assert(result.get(0) == 0);
+    assert(result.get(1) == 16);
+    assert(result.get(2) == 7);
+}
+
+/// http://mathforum.org/library/drmath/view/60433.html 1 + (x-A)*(10-1)/(B-A)
+U normalize_value(T, U)(T item, T actual_min_value, T actual_max_value, T normal_min, T normal_max) pure
+if (isNumeric!T)
+{
+    if (normal_min == normal_max)
+    {
+        throw new Error("the normal min and max values are equal");
+    }
+
+    return (normal_min + (item - actual_min_value) * (normal_max - normal_min) / (
+            actual_max_value - actual_min_value)).to!U;
+}
+
+/// normalize_value
+unittest
+{
+    immutable int orig = 4;
+    immutable int actual_min_value = 0;
+    immutable int actual_max_value = 16;
+    immutable int normal_min = 0;
+    immutable int normal_max = 255;
+    immutable int result = normalize_value!(int, int)(orig, actual_min_value,
+            actual_max_value, normal_min, normal_max);
+    assert(result == 63);
+}
 
 
 

@@ -1,14 +1,14 @@
 module zug.matrix.array_utils;
 
 import std.traits;
-import std.conv: to;
+import std.conv : to;
 
 import zug.matrix.generic;
-version(unittest)
+
+version (unittest)
 {
     public import zug.matrix.dbg;
 }
-
 
 ///
 T[] random_array(T)(size_t size, T min, T max, uint seed) if (isNumeric!T)
@@ -64,7 +64,6 @@ unittest
     assert(orig.get(5, 5) == 8);
 }
 
-
 /**
  * Params: 
  *   input = an array with the first and last elements set, we need to interpolate
@@ -74,7 +73,7 @@ unittest
  * Returns:
  *   result = a new array with the values from 1 to the penultimate interpolated 
  */
-T[] segment_linear_interpolation(T)(T[] input) 
+T[] segment_linear_interpolation(T)(T[] input) pure
 in
 {
     assert(input.length >= 3);
@@ -87,14 +86,13 @@ do
     immutable double bottom_value = input[$ - 1].to!double;
 
     // calculate the slope once per vertical segment
-    immutable double slope = (bottom_value - top_value).to!double 
-        / (input.length - 1).to!double;
+    immutable double slope = (bottom_value - top_value).to!double / (input.length - 1).to!double;
     double last_computed_value = top_value;
     // SEEME: can I do this in parallel ?
     //    maybe if the distance between the populated rows is big enough ?
     // A: not really, need the last computed value before going on, probably, I think
     // TODO look into this later
-    for (size_t i = 1; i <  input.length - 1; i++)
+    for (size_t i = 1; i < input.length - 1; i++)
     {
         // stepping over 1, so just add the slope to save on computations
         // SEEME: maybe if using only the start, the end and the position in betwee
@@ -109,9 +107,10 @@ do
 
 unittest
 {
-    import std.algorithm.comparison: equal;
+    import std.algorithm.comparison : equal;
+
     float[] orig = new float[10];
-    orig[0] =  1;
+    orig[0] = 1;
     orig[9] = 10;
     float[] result = orig.segment_linear_interpolation();
     float[] expected = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
@@ -119,7 +118,7 @@ unittest
     assert(expected.equal(result));
 }
 
-double[] stretch_row_coordinates(size_t orig_length, size_t new_length)
+double[] stretch_row_coordinates(size_t orig_length, size_t new_length) pure
 {
 
     immutable double spacing = ((new_length.to!double - 1) / (orig_length.to!double - 1));
@@ -135,7 +134,7 @@ double[] stretch_row_coordinates(size_t orig_length, size_t new_length)
     return stretched_coordinates;
 }
 
-T[] stretch_row(T)(T[] orig, size_t new_length)
+T[] stretch_row(T)(T[] orig, size_t new_length) pure
 {
 
     double[] stretched_coordinates = stretch_row_coordinates(orig.length, new_length);
@@ -166,8 +165,8 @@ T[] stretch_row(T)(T[] orig, size_t new_length)
             immutable double slope = (orig[orig_coordinates] - orig[orig_coordinates - 1]).to!double / (
                     next_coordinates - prev_coordinates);
 
-            immutable double value = orig[orig_coordinates - 1].to!double 
-                + (slope * (i - prev_coordinates)).to!double;
+            immutable double value = orig[orig_coordinates - 1].to!double + (
+                    slope * (i - prev_coordinates)).to!double;
 
             stretched[i] = value.to!T;
         }
@@ -204,4 +203,3 @@ unittest
     int[] expected = [0, 7, 14, 25, 32, 46, 60, 75, 53, 32, 0, 36, 109, 182, 255];
     assert(result.equal(expected));
 }
-
