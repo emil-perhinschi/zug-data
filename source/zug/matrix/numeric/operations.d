@@ -28,6 +28,29 @@ if (isNumeric!T)
 }
 
 
+Matrix!T multiply(T)(Matrix!T orig, T scalar)
+if (isNumeric!T)
+{
+    import std.stdio: writeln;
+    
+    auto result = orig.data.dup;
+    // https://dlang.org/spec/arrays.html#array-operations 
+    // the [] after the variable name means it's a vector operation    
+    result[] *= scalar;
+    return Matrix!T(result, orig.width);
+}
+
+unittest
+{
+    import zug.matrix.generic.operations: equal;
+    auto orig = Matrix!int([1,2,3,4,5,6,7,8,9],3);
+    auto expected = Matrix!int([3,6,9,12,15,18,21,24,27],3);
+    int scalar = 3;
+    auto result = orig.multiply(scalar);
+    assert(result.equal(expected));
+    assert(!orig.equal(expected));
+}
+
 ///
 Matrix!T multiply(T)(Matrix!T first, Matrix!T second) pure
 if (isNumeric!T) 
@@ -92,6 +115,32 @@ unittest
     assert(result.get(0, 1) == 139);
     assert(result.get(1, 1) == 154);
 }
+
+/// scalar addition
+Matrix!T add(T)(Matrix!T orig, T scalar)
+if (isNumeric!T)
+{
+    import std.stdio: writeln;
+    
+    auto result = orig.data.dup;
+    // https://dlang.org/spec/arrays.html#array-operations 
+    // the [] after the variable name means it's a vector operation    
+    result[] += scalar;
+    return Matrix!T(result, orig.width);
+}
+
+unittest
+{
+    import zug.matrix.generic.operations: equal;
+    auto orig = Matrix!int([1,2,3,4,5,6,7,8,9],3);
+    auto expected = Matrix!int([2,3,4,5,6,7,8,9,10],3);
+    int scalar = 1;
+    auto result = orig.add(scalar);
+    assert(result.equal(expected));
+    assert(!orig.equal(expected));
+}
+
+
 
 /// add two matrices
 Matrix!T add(T)(Matrix!T first, Matrix!T second) pure
@@ -513,6 +562,7 @@ unittest
             actual_max_value, normal_min, normal_max);
     assert(result == 63);
 }
+
 
 
 

@@ -336,34 +336,6 @@ unittest
     assert(orig.get(2, 3) == 11, "get 2,3");
 }
 
-bool equal(T)(Matrix!T first, Matrix!T second)
-{
-    static import std.algorithm;
-// dfmt off
-    if (
-        std.algorithm.equal(first.data, second.data)
-        && second.width == second.width 
-        && first.height == second.height
-    )
-    {
-        return true;
-    }
-// dfmt on
-    return false;
-}
-
-unittest 
-{
-    Matrix!int first = Matrix!int( [1,2,3,4],2 );
-    Matrix!int second = Matrix!int( [1,2,3,4],2 );
-    assert(first.equal(second));
-    assert(second.equal(first));
-    second.set(0,0,100);
-    assert(!first.equal(second));
-    assert(!second.equal(first));
-}
-
-
 
 /**
   Notes: the numbers in the transformation matrix are not about how many rows and 
@@ -375,10 +347,12 @@ unittest
   the x coordinates of the last row, and based on the original coordinates of the last 
   row I should find the scaling number which should go into the transformation matrix 
   in the X position
-  
  */
-
-Matrix!T scale(T)(Matrix!T orig, double scale_x, double scale_y)
+// TODO generic interpolation function
+Matrix!T scale_bilinear(T)(
+    Matrix!T orig, double scale_x, double scale_y,
+    T delegate(T, T, size_t) interpolate
+)
 {
     import std.math : round;
 
@@ -404,21 +378,23 @@ Matrix!T scale(T)(Matrix!T orig, double scale_x, double scale_y)
         auto old_value = orig.get(old_x, old_y);
         result.set(new_x, new_y, old_value);
     }
+
+
     return result;
 }
 
-unittest
-{
-    import std.math : isNaN;
+// unittest
+// {
+//     import std.math : isNaN;
 
-    auto orig = Matrix!double([1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1], 4);
-    auto result = orig.scale(1.5, 1.5);
-    dbg(result, "orig scaled the linear algebra way");
-    assert(result.get(0, 0) == 1);
-    assert(isNaN(result.get(1, 1)));
-    assert(result.get(2, 2) == 1);
-    assert(isNaN(result.get(4, 4)));
-}
+//     auto orig = Matrix!double([1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1], 4);
+//     auto result = orig.scale(1.5, 1.5);
+//     dbg(result, "orig scaled the linear algebra way");
+//     assert(result.get(0, 0) == 1);
+//     assert(isNaN(result.get(1, 1)));
+//     assert(result.get(2, 2) == 1);
+//     assert(isNaN(result.get(4, 4)));
+// }
 
 /**
  * scale_coordinates returns a 2D Matrix!double with the coordinates of each point in the original matrix 

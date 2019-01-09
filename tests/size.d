@@ -5,7 +5,9 @@ void main() {
     size_t x = 35000;
     size_t y = 35000;
 
-    auto large = Matrix!short(x,y);
+    auto large = Matrix!int(x,y);
     writeln("matrix done, pausing, size is ",x*y);
     readln();
+
+    
 }

@@ -433,3 +433,45 @@ unittest
     assert(window[4] == 1, "changed element in orig is in the expected spot");
     assert(window[1] == 0, "unchanged element in orig is in the expected spot");
 }
+
+
+bool equal(T)(Matrix!T first, Matrix!T second)
+{
+    static import std.algorithm;
+// dfmt off
+    if (
+        std.algorithm.equal(first.data, second.data)
+        && second.width == second.width 
+        && first.height == second.height
+    )
+    {
+        return true;
+    }
+// dfmt on
+    return false;
+}
+
+unittest 
+{
+    Matrix!int first = Matrix!int( [1,2,3,4],2 );
+    Matrix!int second = Matrix!int( [1,2,3,4],2 );
+    assert(first.equal(second));
+    assert(second.equal(first));
+    second.set(0,0,100);
+    assert(!first.equal(second));
+    assert(!second.equal(first));
+}
+
+unittest 
+{
+    
+    Matrix!Offset first = Matrix!Offset( 2, 2 );
+    Matrix!Offset second = Matrix!Offset(2, 2 );
+    assert(first.equal(second));
+    assert(second.equal(first));
+
+    auto wrong = Offset(1,1);
+    second.set(0,0, wrong);
+    assert(!first.equal(second));
+    assert(!second.equal(first));
+}
