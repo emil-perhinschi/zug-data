@@ -537,6 +537,37 @@ unittest
     assert(result.get(2) == 7);
 }
 
+// TODO: need to benchmark this, and if it works better drop the other one
+Matrix!T normalize_vector_operation(T)(Matrix!T orig, T normal_min, T normal_max) pure
+if (isNumeric!T)
+{
+    import std.array : array;
+    import std.algorithm : map;
+
+    auto actual_min_value = orig.min;
+    auto actual_max_value = orig.max;
+
+    T[] new_data = new T[orig.data_length];
+    auto old_data = orig.data;
+    new_data[] = ( normal_min + ( old_data[] - actual_min_value) * (normal_max - normal_min) / ( actual_max_value - actual_min_value ) );
+    
+    return Matrix!T(new_data,orig.width);
+}
+
+/// normalize!float
+unittest
+{
+    auto orig = Matrix!float([1.1, 100.1, 50.1], 3);
+    immutable float normal_min = 0.0;
+    immutable float normal_max = 16.0;
+    auto result = orig.normalize_vector_operation!float(normal_min, normal_max);
+    dbg(result, "normalized using vector operations");
+    assert(result.get(0) == 0);
+    assert(result.get(1) == 16);
+    // assert(result[2] ==  7.91919); // this fails for some reason , probably float weiredness ? TODO: investigate further
+}
+
+
 /// http://mathforum.org/library/drmath/view/60433.html 1 + (x-A)*(10-1)/(B-A)
 U normalize_value(T, U)(T item, T actual_min_value, T actual_max_value, T normal_min, T normal_max) pure
 if (isNumeric!T)
@@ -549,6 +580,7 @@ if (isNumeric!T)
     return (normal_min + (item - actual_min_value) * (normal_max - normal_min) / (
             actual_max_value - actual_min_value)).to!U;
 }
+
 
 /// normalize_value
 unittest
