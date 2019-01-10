@@ -117,6 +117,8 @@ unittest
 }
 
 /// scalar addition
+// TODO: apparently this is not a thing, geometrically does not make sense
+// more details https://math.stackexchange.com/a/1379252
 Matrix!T add(T)(Matrix!T orig, T scalar)
 if (isNumeric!T)
 {
@@ -175,7 +177,8 @@ unittest
 }
 
 /// this will work only for numeric 2d matrices 
-//    because of the  "return i.to!R;" inside, TODO have to think about alternatives for the generic code
+//    because of the  "return i.to!R;" inside, 
+// TODO have to think about alternatives for the generic code
 Matrix!R replace_elements(T, R)(Matrix!T orig, bool delegate(T) filter, R delegate(T) transform)
         if (isNumeric!T && isNumeric!R)
 {
@@ -550,7 +553,7 @@ if (isNumeric!T)
     T[] new_data = new T[orig.data_length];
     auto old_data = orig.data;
     new_data[] = ( normal_min + ( old_data[] - actual_min_value) * (normal_max - normal_min) / ( actual_max_value - actual_min_value ) );
-    
+
     return Matrix!T(new_data,orig.width);
 }
 
