@@ -1,8 +1,8 @@
 module tests.populations;
+
+import std.stdio: writeln;
+
 import zug.matrix;
-
-
-
 
 /**
 *  energy: how much energy can be harvested per unit of time
@@ -21,10 +21,18 @@ struct World {
 * will pick a cell (top left corner, that is 0,0) to place the initial population
 */
 void main() { 
-    import std.stdio: writeln;
+    immutable loops = 100;
+    World world = init();
+    writeln(world);
 
-    immutable int width = 600;
-    immutable int height = 400;
+    for (int i = 0; i < loops; i++) {
+
+    }
+}
+
+World init() {
+    immutable int width = 1200;
+    immutable int height = 1000;
     immutable int data_length = width * height;
 
     int min_energy = 0;
@@ -35,12 +43,13 @@ void main() {
     int[data_length] energy_data = random_array!int(data_length, min_energy, max_energy, seed);
     auto energy = Matrix!int(energy_data, width);
 
-    Agent[] initial_population = initialize_population(seed);
-    writeln(initial_population);
     auto population = Matrix!(Agent[])(width, height);
-    World world = World(energy, population);
+    auto world = World(energy, population);
+
+    Agent[] initial_population = initialize_population(seed);
     world.population.set(0,0, initial_population);
-    writeln(world);
+
+    return world;
 }
 
 /**

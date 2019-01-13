@@ -1,0 +1,14 @@
+.dub
+docs.json
+__dummy.html
+docs/
+populations.so
+populations.dylib
+populations.dll
+populations.a
+populations.lib
+populations-test-*
+*.exe
+*.o
+*.obj
+*.lst
