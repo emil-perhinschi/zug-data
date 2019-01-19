@@ -8,6 +8,34 @@ version (unittest)
     public import zug.matrix.dbg;
 }
 
+T[][] to_2d_array(T)(Matrix!T orig) pure if (isNumeric!T)
+{
+    T[][] result;
+    for(size_t i = 0; i < orig.height; i++) 
+    {
+        result ~= orig.row(i);
+    }
+    return result;
+}
+
+unittest
+{
+    import std.algorithm: equal;
+
+    auto orig = Matrix!int(
+        [
+            1,2,3,
+            4,5,6,
+            7,8,9,
+            10,11,12
+        ],
+        3
+    );
+    auto result = orig.to_2d_array();
+    int[][] expected = [[1, 2, 3], [4, 5, 6], [7, 8, 9], [10, 11, 12]];
+    assert(result.equal(expected));
+}
+
 Matrix!T transpose(T)(Matrix!T orig) pure if (isNumeric!T)
 {
     auto result = Matrix!T(orig.height, orig.width);

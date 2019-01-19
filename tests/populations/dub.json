@@ -5,5 +5,10 @@
 		"Emil Nicolaie Perhinschi"
 	],
 	"copyright": "Copyright © 2019, Emil Nicolaie Perhinschi",
-	"name": "populations"
+	"name": "populations",
+	"dependencies": {
+		"vibe-d": "~master",
+		"zug-matrix": "~master",
+		"mustache-d": "~>0.1.3"
+	}
 }

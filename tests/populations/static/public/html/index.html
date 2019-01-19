@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html>
+    <head>
+    <meta charset="UTF-8">
+    <script>
+
+fetch('http://127.0.0.1:8088/map_data')
+    .then( response => { return response.json() })
+    .then(function(data) {
+        render(data)
+    })
+    .catch(error => console.error(error));
+
+function render(data) {
+    console.log(data);
+    const map_palette_init = [
+        [ 23,  87, 126], //"#17577e"
+        [ 61, 108,  66], //"#3d6c42"
+        [ 63, 110,  66], //"#3f6e42"
+        [ 71, 115,  64], //"#477340"
+        [ 82, 123,  62], //"#527b3e"
+        [ 97, 133,  59], //"#61853b"
+        [114, 144,  56], //"#729038"
+        [143, 164,  51], //"#8fa433"
+        [175, 186,  45], //"#afba2d"
+        [184, 192,  43], //"#b8c02b"
+        [169, 166,  42], //"#a9a62a"
+        [141, 115,  41], //"#8d7329"
+        [117,  71,  39], //"#754727"
+        [107,  53,  39], //"#6b3527"
+        [131,  86,  74], //"#83564a"
+        [195, 173, 167]  //"#c3ada7"
+    ]
+    map_palette = map_palette_init.map( rgb_value => rgb_to_string(rgb_value) )
+
+    const width  = 40
+    const height = 40
+    tile_width = 10;
+    tile_height = 10;
+    const ctx = document.getElementById("map_target").getContext("2d", { alpha: false })
+    console.log(data.length);
+    console.log(data[0].length);
+    for (let y = 0; y < height; y++) {
+        for (let x = 0; x < width; x++) {
+            const terrain_type = data[y][x]
+            ctx.fillStyle = map_palette[terrain_type]
+            ctx.fillRect(
+                x * tile_width,
+                y * tile_height,
+                tile_width,
+                tile_height
+            )
+        }
+    }
+}
+
+function rgb_to_string(rgb, change) {
+    if (
+        Number.isInteger(change)
+        && change >= -255
+        && change <= 255
+    ) {
+        rgb = rgb.map( value => value + change >= 0 ? value + change : 0)
+    }
+    return "rgb(" + rgb.join(",") + ")"
+}
+
+    </script>
+    </head>
+<body>
+    test zug-matrix: random 4x4, scaled 10x<br/>
+    <canvas id="map_target" width="400" height="400"></canvas>
+</body>
+</html>
