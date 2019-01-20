@@ -3,16 +3,24 @@
     <head>
     <meta charset="UTF-8">
     <script>
+'use strict'
 
-fetch('http://127.0.0.1:8088/map_data')
+fetch('http://127.0.0.1:8088/map_data_square_smoothing')
     .then( response => { return response.json() })
-    .then(function(data) {
-        render(data)
+    .then(function(response_data) {
+        render(response_data, "map_target_square")
     })
-    .catch(error => console.error(error));
+    .catch(error => console.error(error))
 
-function render(data) {
-    console.log(data);
+fetch('http://127.0.0.1:8088/map_data_circle_smoothing')
+    .then( response => { return response.json() })
+    .then(function(response_data) {
+        render(response_data, "map_target_circle")
+    })
+    .catch(error => console.error(error))
+
+
+function render(world_map, canvas_id) {
     const map_palette_init = [
         [ 23,  87, 126], //"#17577e"
         [ 61, 108,  66], //"#3d6c42"
@@ -31,13 +39,15 @@ function render(data) {
         [131,  86,  74], //"#83564a"
         [195, 173, 167]  //"#c3ada7"
     ]
-    map_palette = map_palette_init.map( rgb_value => rgb_to_string(rgb_value) )
+    const map_palette = map_palette_init.map( rgb_value => rgb_to_string(rgb_value) )
 
-    const width  = 40
-    const height = 40
-    tile_width = 10;
-    tile_height = 10;
-    const ctx = document.getElementById("map_target").getContext("2d", { alpha: false })
+    const width  = world_map.width
+    const height = world_map.height
+    const tile_width = world_map.tile_width
+    const tile_height = world_map.tile_height
+    const data = world_map.data
+
+    const ctx = document.getElementById(canvas_id).getContext("2d", { alpha: false })
     console.log(data.length);
     console.log(data[0].length);
     for (let y = 0; y < height; y++) {
@@ -68,7 +78,15 @@ function rgb_to_string(rgb, change) {
     </script>
     </head>
 <body>
-    test zug-matrix: random 4x4, scaled 10x<br/>
-    <canvas id="map_target" width="400" height="400"></canvas>
+    <div>
+        test zug-matrix: random 4x4, scaled 10x, square window moving average smoothing<br/>
+        <canvas id="map_target_square" width="400" height="400"></canvas><br/>
+    </div>
+
+    <div>
+        test zug-matrix: random 4x4, scaled 10x, circle window moving average smoothing<br/>
+        <canvas id="map_target_circle" width="400" height="400"></canvas>
+    </div>
+
 </body>
 </html>

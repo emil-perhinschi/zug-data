@@ -424,9 +424,11 @@ do
     // close to the top edge
     immutable size_t start_y = y < distance ? 0 : y - distance;
     // close to the right edge
-    immutable size_t end_x = distance + x > orig.width ? orig.width : x + distance;
+    immutable size_t max_x = orig.width - 1;
+    immutable size_t end_x = distance + x > max_x ? max_x : x + distance;
     // close to the bottom edge
-    immutable size_t end_y = distance + y > orig.height ? orig.height : y + distance;
+    immutable size_t max_y = orig.height - 1;
+    immutable size_t end_y = distance + y > max_y ? max_y : y + distance;
 
     T[] result;
     for (size_t i = start_y; i < end_y + 1; i++)
@@ -447,6 +449,24 @@ do
         }
     }
     return result;
+}
+
+unittest
+{
+    import zug.matrix.array_utils;
+    import zug.matrix.numeric.operations;
+
+    auto data = random_array!int(16, 0, 15,12_341_234);
+    auto random_mask = Matrix!int(random_array!int(1600, 0, 4, 12_345_678), 40);
+    size_t window_size = 3;
+    auto orig = Matrix!int(data, 4);
+    dbg(orig, "build_random_map_shaper_circle orig");
+    auto stretched = orig.stretch_bilinear(10,10);
+    dbg(stretched, "build_random_map_shaper_circle stretched");
+    auto randomized = stretched.add(random_mask);
+    dbg(randomized, "build_random_map_shaper_circle randomized");
+    auto smooth = randomized.moving_average!(int, int)(window_size, &shaper_circle!int, &moving_average_simple_calculator!(int, int));
+    dbg(smooth, "build_random_map_shaper_circle smooth");
 }
 
 unittest

@@ -31,7 +31,9 @@ void main()
 	);
 */
 	
-	router.get("/map_data", &map_data);
+	router.get("/map_data_square_smoothing", &map_data_square_smoothing_window);
+    router.get("/map_data_circle_smoothing", &map_data_circle_smoothing_window);
+    // router.get("/map_data_circle_smoothing", &map_data_square_smoothing_window);
 
     listenHTTP(settings, router);
 
@@ -39,14 +41,59 @@ void main()
     runApplication();
 }
 
-void map_data(HTTPServerRequest req, HTTPServerResponse res) {
-    auto data = random_array!int(16, 0, 15,12_341_234);
-    auto orig = Matrix!int(data, 4);
-    auto scaled = orig.stretch_bilinear(10,10);
-    auto result = scaled.to_2d_array();
-    res.writeBody(serializeToJson(result).toString);
+void map_data_square_smoothing_window(HTTPServerRequest req, HTTPServerResponse res) 
+{
+    auto map_data = build_random_map_shaper_square();
+    auto result = Json(
+        [
+            "data": map_data.serializeToJson(),
+            "height": Json(40),
+            "width": Json(40),
+            "tile_width": Json(10),
+            "tile_height": Json(10)
+        ]
+    );
+    res.writeBody(result.toString);
 }
 
+void map_data_circle_smoothing_window(HTTPServerRequest req, HTTPServerResponse res) 
+{
+    auto map_data = build_random_map_shaper_circle();
+    auto result = Json(
+        [
+            "data": map_data.serializeToJson(),
+            "height": Json(40),
+            "width": Json(40),
+            "tile_width": Json(10),
+            "tile_height": Json(10)
+        ]
+    );
+    res.writeBody(result.toString);
+}
+
+int[][] build_random_map_shaper_square() 
+{
+    auto data = random_array!int(16, 0, 15,12_341_234);
+    auto random_mask = Matrix!int(random_array!int(1600, 0, 4, 12_345_678), 40);
+    size_t window_size = 3;
+    return Matrix!int(data, 4)
+        .stretch_bilinear(10,10)
+        .add(random_mask)
+        .moving_average!(int, int)(window_size, &shaper_square!int, &moving_average_simple_calculator!(int, int))
+        .to_2d_array();
+}
+
+int[][] build_random_map_shaper_circle() 
+{
+    auto data = random_array!int(16, 0, 15,12_341_234);
+    auto random_mask = Matrix!int(random_array!int(1600, 0, 4, 12_345_678), 40);
+    size_t window_size = 3;
+    return Matrix!int(data, 4)
+        .stretch_bilinear(10,10)
+        .add(random_mask)
+        .moving_average!(int, int)(window_size, &shaper_circle!int, &moving_average_simple_calculator!(int, int))
+        .to_2d_array();
+}
 
 /**
 * will create a world of size height*width
