@@ -30,7 +30,9 @@ void main()
 		)
 	);
 */
-	
+
+    router.get("/map_data_raw", &map_data_no_random_mask);	
+	router.get("/map_data_no_smoothing", &map_data_no_smoothing);	
 	router.get("/map_data_square_smoothing", &map_data_square_smoothing_window);
     router.get("/map_data_circle_smoothing", &map_data_circle_smoothing_window);
     // router.get("/map_data_circle_smoothing", &map_data_square_smoothing_window);
@@ -41,9 +43,50 @@ void main()
     runApplication();
 }
 
+void map_data_no_random_mask(HTTPServerRequest req, HTTPServerResponse res) 
+{
+    immutable size_t height = 40;
+    immutable size_t width = 40;
+    immutable int seed = 12_345_678;
+    auto map_data = build_random_map_no_random_mask(height, width, seed);
+    auto result = Json(
+        [
+            "data": map_data.serializeToJson(),
+            "height": Json(40),
+            "width": Json(40),
+            "tile_width": Json(10),
+            "tile_height": Json(10)
+        ]
+    );
+    res.writeBody(result.toString);
+}
+
+
+void map_data_no_smoothing(HTTPServerRequest req, HTTPServerResponse res) 
+{
+    immutable size_t height = 40;
+    immutable size_t width = 40;
+    immutable int seed = 12_345_678;
+    auto map_data = build_random_map(height, width, seed);
+    auto result = Json(
+        [
+            "data": map_data.serializeToJson(),
+            "height": Json(40),
+            "width": Json(40),
+            "tile_width": Json(10),
+            "tile_height": Json(10)
+        ]
+    );
+    res.writeBody(result.toString);
+}
+
+
 void map_data_square_smoothing_window(HTTPServerRequest req, HTTPServerResponse res) 
 {
-    auto map_data = build_random_map_shaper_square();
+    immutable size_t height = 40;
+    immutable size_t width = 40;
+    immutable int seed = 12_345_678;
+    auto map_data = build_random_map_shaper_square(height, width, seed);
     auto result = Json(
         [
             "data": map_data.serializeToJson(),
@@ -58,7 +101,10 @@ void map_data_square_smoothing_window(HTTPServerRequest req, HTTPServerResponse 
 
 void map_data_circle_smoothing_window(HTTPServerRequest req, HTTPServerResponse res) 
 {
-    auto map_data = build_random_map_shaper_circle();
+    immutable size_t height = 40;
+    immutable size_t width = 40;
+    immutable int seed = 12_345_678;
+    auto map_data = build_random_map_shaper_circle(height, width, seed);
     auto result = Json(
         [
             "data": map_data.serializeToJson(),
@@ -71,10 +117,31 @@ void map_data_circle_smoothing_window(HTTPServerRequest req, HTTPServerResponse 
     res.writeBody(result.toString);
 }
 
-int[][] build_random_map_shaper_square() 
+int[][] build_random_map_no_random_mask(size_t height, size_t width, int seed) 
 {
-    auto data = random_array!int(16, 0, 15,12_341_234);
-    auto random_mask = Matrix!int(random_array!int(1600, 0, 4, 12_345_678), 40);
+    auto data = random_array!int(16, 0, 15,seed);
+    size_t window_size = 3;
+    return Matrix!int(data, 4)
+        .stretch_bilinear(10,10)
+        .to_2d_array();
+}
+
+int[][] build_random_map(size_t height, size_t width, int seed) 
+{
+    auto data = random_array!int(16, 0, 15,seed);
+    auto random_mask = Matrix!int(random_array!int(1600, 0, 4, seed), 40);
+    size_t window_size = 3;
+    return Matrix!int(data, 4)
+        .stretch_bilinear(10,10)
+        .add(random_mask)
+        .to_2d_array();
+}
+
+
+int[][] build_random_map_shaper_square(size_t height, size_t width, int seed) 
+{
+    auto data = random_array!int(16, 0, 15,seed);
+    auto random_mask = Matrix!int(random_array!int(1600, 0, 4, seed), 40);
     size_t window_size = 3;
     return Matrix!int(data, 4)
         .stretch_bilinear(10,10)
@@ -83,10 +150,10 @@ int[][] build_random_map_shaper_square()
         .to_2d_array();
 }
 
-int[][] build_random_map_shaper_circle() 
+int[][] build_random_map_shaper_circle(size_t height, size_t width, int seed) 
 {
-    auto data = random_array!int(16, 0, 15,12_341_234);
-    auto random_mask = Matrix!int(random_array!int(1600, 0, 4, 12_345_678), 40);
+    auto data = random_array!int(16, 0, 15, seed);
+    auto random_mask = Matrix!int(random_array!int(1600, 0, 4, seed), 40);
     size_t window_size = 3;
     return Matrix!int(data, 4)
         .stretch_bilinear(10,10)
