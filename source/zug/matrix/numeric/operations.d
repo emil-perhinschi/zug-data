@@ -28,7 +28,7 @@ if (isNumeric!T)
 }
 
 
-Matrix!T multiply(T)(Matrix!T orig, T scalar)
+Matrix!T multiply(T)(Matrix!T orig, T scalar) pure
 if (isNumeric!T)
 {
     import std.stdio: writeln;
@@ -119,7 +119,7 @@ unittest
 /// scalar addition
 // TODO: apparently this is not a thing, geometrically does not make sense
 // more details https://math.stackexchange.com/a/1379252
-Matrix!T add(T)(Matrix!T orig, T scalar)
+Matrix!T add(T)(Matrix!T orig, T scalar) 
 if (isNumeric!T)
 {
     import std.stdio: writeln;
@@ -547,8 +547,8 @@ if (isNumeric!T)
     import std.array : array;
     import std.algorithm : map;
 
-    auto actual_min_value = orig.min;
-    auto actual_max_value = orig.max;
+    immutable auto actual_min_value = orig.min;
+    immutable auto actual_max_value = orig.max;
 
     T[] new_data = new T[orig.data_length];
     auto old_data = orig.data;

@@ -8,7 +8,41 @@ version (unittest)
     public import zug.matrix.dbg;
 }
 
-T[][] to_2d_array(T)(Matrix!T orig) pure if (isNumeric!T)
+Matrix!T concatenate_horizontally(T)(Matrix!T first, Matrix!T second) pure
+in
+{
+    assert(first.height == second.height);
+}
+do
+{
+    Matrix!T result = Matrix!T(first.width + second.width, first.height);
+
+    for (size_t i = 0; i < first.height; i++)
+    {
+        auto first_row = first.row(i);
+        first_row ~= second.row(i);
+        result.row(first_row, i);
+    }
+    return result;
+}
+
+unittest
+{
+    auto first = Matrix!int([1,2,3,4], 2);
+    auto second = Matrix!int([ 1,2,3,4,5,6], 3);
+    auto result = first.concatenate_horizontally(second);
+    dbg(result, "concatenate_horizontally");
+    auto expected = Matrix!int(
+        [
+            1, 2, 1, 2, 3,
+            3, 4, 4, 5, 6
+        ],
+        5
+    );
+    assert(result.equal(expected), "concatenate_horizontally");
+}
+
+T[][] to_2d_array(T)(Matrix!T orig) pure
 {
     T[][] result;
     for(size_t i = 0; i < orig.height; i++) 
@@ -16,6 +50,42 @@ T[][] to_2d_array(T)(Matrix!T orig) pure if (isNumeric!T)
         result ~= orig.row(i);
     }
     return result;
+}
+
+unittest
+{
+    auto first = Matrix!Offset(
+        [
+            Offset(0,0), Offset(1,0),
+            Offset(0,1), Offset(1,1)
+        ],
+        2
+    );
+
+    auto second = Matrix!Offset(
+        [
+            Offset(0,0), Offset(1,0), Offset(2,0),
+            Offset(0,1), Offset(1,1), Offset(2,1)
+        ],
+        3
+    );
+
+    auto result = first.concatenate_horizontally(second);
+    dbg(result, "concatenate_horizontally with non-numeric elements");
+    auto expected = Matrix!Offset(
+        [
+            Offset(0, 0), Offset(1, 0), Offset(0, 0), Offset(1, 0), Offset(2, 0),
+            Offset(0, 1), Offset(1, 1), Offset(0, 1), Offset(1, 1), Offset(2, 1)
+        ],
+        5
+    );
+
+    assert(result.equal(expected), "concatenate_horizontally with non-numeric elements");
+
+    // let's check equal(), just to make sure
+    auto not_expected = result.copy();
+    not_expected.set(1,1, Offset(100, 100));
+    assert(!result.equal(not_expected));
 }
 
 unittest
