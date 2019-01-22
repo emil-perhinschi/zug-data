@@ -8,6 +8,85 @@ version (unittest)
     public import zug.matrix.dbg;
 }
 
+Matrix!T concatenate_vertically(T)(Matrix!T first, Matrix!T second) pure
+in
+{
+    assert(first.width == second.width);
+}
+do
+{
+    Matrix!T result = Matrix!T(first.width, first.height + second.height);
+
+    for (size_t i = 0; i < first.width; i++)
+    {
+        auto first_col = first.column(i);
+        first_col ~= second.column(i);
+        result.column(first_col, i);
+    }
+    return result;
+}
+
+unittest
+{
+    auto first = Matrix!int([1,2,3,4], 2);
+    auto second = Matrix!int([ 1,2,3,4,5,6], 2);
+    auto result = first.concatenate_vertically(second);
+    dbg(result, "concatenate_vertically");
+    auto expected = Matrix!int(
+        [
+            1, 2,
+            3, 4,
+            1, 2,
+            3, 4,
+            5, 6,
+        ],
+        2
+    );
+    assert(result.equal(expected), "concatenate_vertically");
+}
+
+
+/// non-numeric test
+unittest
+{
+    auto first = Matrix!Offset(
+        [
+            Offset(0,0), Offset(1,0),
+            Offset(0,1), Offset(1,1)
+        ],
+        2
+    );
+
+    auto second = Matrix!Offset(
+        [
+            Offset(0,0), Offset(1,0), Offset(2,0),
+            Offset(0,1), Offset(1,1), Offset(2,1)
+        ],
+        2
+    );
+
+    auto result = first.concatenate_vertically(second);
+    dbg(result, "concatenate_vertically with non-numeric elements");
+    auto expected = Matrix!Offset(
+        [
+            Offset(0, 0), Offset(1, 0),
+            Offset(0, 1), Offset(1, 1),
+            Offset(0, 0), Offset(1, 0),
+            Offset(2, 0), Offset(0, 1),
+            Offset(1, 1), Offset(2, 1),
+        ],
+        2
+    );
+
+    assert(result.equal(expected), "concatenate_vertically with non-numeric elements");
+
+    // let's check equal(), just to make sure
+    auto not_expected = result.copy();
+    not_expected.set(1,1, Offset(100, 100));
+    assert(!result.equal(not_expected));
+}
+
+
 Matrix!T concatenate_horizontally(T)(Matrix!T first, Matrix!T second) pure
 in
 {
@@ -42,16 +121,8 @@ unittest
     assert(result.equal(expected), "concatenate_horizontally");
 }
 
-T[][] to_2d_array(T)(Matrix!T orig) pure
-{
-    T[][] result;
-    for(size_t i = 0; i < orig.height; i++) 
-    {
-        result ~= orig.row(i);
-    }
-    return result;
-}
 
+/// non-numeric test
 unittest
 {
     auto first = Matrix!Offset(
@@ -87,6 +158,17 @@ unittest
     not_expected.set(1,1, Offset(100, 100));
     assert(!result.equal(not_expected));
 }
+
+T[][] to_2d_array(T)(Matrix!T orig) pure
+{
+    T[][] result;
+    for(size_t i = 0; i < orig.height; i++) 
+    {
+        result ~= orig.row(i);
+    }
+    return result;
+}
+
 
 unittest
 {
