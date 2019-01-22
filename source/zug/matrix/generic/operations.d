@@ -28,10 +28,11 @@ do
 
 unittest
 {
-    auto first = Matrix!int([1,2,3,4], 2);
-    auto second = Matrix!int([ 1,2,3,4,5,6], 2);
+    auto first = Matrix!int([1, 2, 3, 4], 2);
+    auto second = Matrix!int([1, 2, 3, 4, 5, 6], 2);
     auto result = first.concatenate_vertically(second);
     dbg(result, "concatenate_vertically");
+    //dfmt off
     auto expected = Matrix!int(
         [
             1, 2,
@@ -42,31 +43,21 @@ unittest
         ],
         2
     );
+//dfmt on
     assert(result.equal(expected), "concatenate_vertically");
 }
-
 
 /// non-numeric test
 unittest
 {
-    auto first = Matrix!Offset(
-        [
-            Offset(0,0), Offset(1,0),
-            Offset(0,1), Offset(1,1)
-        ],
-        2
-    );
+    auto first = Matrix!Offset([Offset(0, 0), Offset(1, 0), Offset(0, 1), Offset(1, 1)], 2);
 
-    auto second = Matrix!Offset(
-        [
-            Offset(0,0), Offset(1,0), Offset(2,0),
-            Offset(0,1), Offset(1,1), Offset(2,1)
-        ],
-        2
-    );
+    auto second = Matrix!Offset([Offset(0, 0), Offset(1, 0), Offset(2, 0),
+            Offset(0, 1), Offset(1, 1), Offset(2, 1)], 2);
 
     auto result = first.concatenate_vertically(second);
     dbg(result, "concatenate_vertically with non-numeric elements");
+    //dfmt off
     auto expected = Matrix!Offset(
         [
             Offset(0, 0), Offset(1, 0),
@@ -77,15 +68,14 @@ unittest
         ],
         2
     );
-
+    //dfmt on
     assert(result.equal(expected), "concatenate_vertically with non-numeric elements");
 
     // let's check equal(), just to make sure
     auto not_expected = result.copy();
-    not_expected.set(1,1, Offset(100, 100));
+    not_expected.set(1, 1, Offset(100, 100));
     assert(!result.equal(not_expected));
 }
-
 
 Matrix!T concatenate_horizontally(T)(Matrix!T first, Matrix!T second) pure
 in
@@ -107,24 +97,18 @@ do
 
 unittest
 {
-    auto first = Matrix!int([1,2,3,4], 2);
-    auto second = Matrix!int([ 1,2,3,4,5,6], 3);
+    auto first = Matrix!int([1, 2, 3, 4], 2);
+    auto second = Matrix!int([1, 2, 3, 4, 5, 6], 3);
     auto result = first.concatenate_horizontally(second);
     dbg(result, "concatenate_horizontally");
-    auto expected = Matrix!int(
-        [
-            1, 2, 1, 2, 3,
-            3, 4, 4, 5, 6
-        ],
-        5
-    );
+    auto expected = Matrix!int([1, 2, 1, 2, 3, 3, 4, 4, 5, 6], 5);
     assert(result.equal(expected), "concatenate_horizontally");
 }
-
 
 /// non-numeric test
 unittest
 {
+    //dfmt off
     auto first = Matrix!Offset(
         [
             Offset(0,0), Offset(1,0),
@@ -150,39 +134,40 @@ unittest
         ],
         5
     );
-
+    //dfmt on
     assert(result.equal(expected), "concatenate_horizontally with non-numeric elements");
 
     // let's check equal(), just to make sure
     auto not_expected = result.copy();
-    not_expected.set(1,1, Offset(100, 100));
+    not_expected.set(1, 1, Offset(100, 100));
     assert(!result.equal(not_expected));
 }
 
 T[][] to_2d_array(T)(Matrix!T orig) pure
 {
     T[][] result;
-    for(size_t i = 0; i < orig.height; i++) 
+    for (size_t i = 0; i < orig.height; i++)
     {
         result ~= orig.row(i);
     }
     return result;
 }
 
-
 unittest
 {
-    import std.algorithm: equal;
+    import std.algorithm : equal;
 
+    //dfmt off
     auto orig = Matrix!int(
         [
-            1,2,3,
-            4,5,6,
-            7,8,9,
+            1,  2, 3,
+            4,  5, 6,
+            7,  8, 9,
             10,11,12
         ],
         3
     );
+//dfmt on
     auto result = orig.to_2d_array();
     int[][] expected = [[1, 2, 3], [4, 5, 6], [7, 8, 9], [10, 11, 12]];
     assert(result.equal(expected));
@@ -371,15 +356,15 @@ Matrix!T dice(T)(Matrix!T orig, Offset offset, size_t width, size_t height) pure
 unittest
 {
     // dfmt off
-        int[] orig_data = [
-            0, 0, 0, 0, 0, 0,
-            0, 1, 1, 1, 1, 0,
-            0, 1, 0, 0, 1, 0,
-            0, 1, 0, 0, 1, 0,
-            0, 1, 1, 1, 1, 0,
-            0, 0, 0, 0, 0, 0
-        ];
-        // dfmt on
+    int[] orig_data = [
+        0, 0, 0, 0, 0, 0,
+        0, 1, 1, 1, 1, 0,
+        0, 1, 0, 0, 1, 0,
+        0, 1, 0, 0, 1, 0,
+        0, 1, 1, 1, 1, 0,
+        0, 0, 0, 0, 0, 0
+    ];
+    // dfmt on
 
     size_t width = 6;
     auto orig = Matrix!int(orig_data, width);
@@ -608,16 +593,17 @@ unittest
     import zug.matrix.array_utils;
     import zug.matrix.numeric.operations;
 
-    auto data = random_array!int(16, 0, 15,12_341_234);
+    auto data = random_array!int(16, 0, 15, 12_341_234);
     auto random_mask = Matrix!int(random_array!int(1600, 0, 4, 12_345_678), 40);
     size_t window_size = 3;
     auto orig = Matrix!int(data, 4);
     dbg(orig, "build_random_map_shaper_circle orig");
-    auto stretched = orig.stretch_bilinear(10,10);
+    auto stretched = orig.stretch_bilinear(10, 10);
     dbg(stretched, "build_random_map_shaper_circle stretched");
     auto randomized = stretched.add(random_mask);
     dbg(randomized, "build_random_map_shaper_circle randomized");
-    auto smooth = randomized.moving_average!(int, int)(window_size, &shaper_circle!int, &moving_average_simple_calculator!(int, int));
+    auto smooth = randomized.moving_average!(int, int)(window_size,
+            &shaper_circle!int, &moving_average_simple_calculator!(int, int));
     dbg(smooth, "build_random_map_shaper_circle smooth");
 }
 
@@ -634,11 +620,11 @@ unittest
     assert(window[1] == 0, "unchanged element in orig is in the expected spot");
 }
 
-
 bool equal(T)(Matrix!T first, Matrix!T second)
 {
     static import std.algorithm;
-// dfmt off
+
+    // dfmt off
     if (
         std.algorithm.equal(first.data, second.data)
         && second.width == second.width 
@@ -651,27 +637,27 @@ bool equal(T)(Matrix!T first, Matrix!T second)
     return false;
 }
 
-unittest 
+unittest
 {
-    Matrix!int first = Matrix!int( [1,2,3,4],2 );
-    Matrix!int second = Matrix!int( [1,2,3,4],2 );
+    Matrix!int first = Matrix!int([1, 2, 3, 4], 2);
+    Matrix!int second = Matrix!int([1, 2, 3, 4], 2);
     assert(first.equal(second));
     assert(second.equal(first));
-    second.set(0,0,100);
+    second.set(0, 0, 100);
     assert(!first.equal(second));
     assert(!second.equal(first));
 }
 
-unittest 
+unittest
 {
-    
-    Matrix!Offset first = Matrix!Offset( 2, 2 );
-    Matrix!Offset second = Matrix!Offset(2, 2 );
+
+    Matrix!Offset first = Matrix!Offset(2, 2);
+    Matrix!Offset second = Matrix!Offset(2, 2);
     assert(first.equal(second));
     assert(second.equal(first));
 
-    auto wrong = Offset(1,1);
-    second.set(0,0, wrong);
+    auto wrong = Offset(1, 1);
+    second.set(0, 0, wrong);
     assert(!first.equal(second));
     assert(!second.equal(first));
 }
