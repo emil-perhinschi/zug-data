@@ -1,0 +1,12 @@
+{
+	"description": "testing zug-matrix",
+	"dependencies": {
+		"arsd-official:image_files": "*"
+	},
+	"authors": [
+		"Emil Nicolaie Perhinschi"
+	],
+	"copyright": "Copyright © 2019, Emil Nicolaie Perhinschi",
+	"license": "proprietary",
+	"name": "conversion"
+}

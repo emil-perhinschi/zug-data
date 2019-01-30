@@ -203,3 +203,11 @@ unittest
     int[] expected = [0, 7, 14, 25, 32, 46, 60, 75, 53, 32, 0, 36, 109, 182, 255];
     assert(result.equal(expected));
 }
+
+// TODO later, after I make a function to plot functions 
+T[] cubic_interpolation(T)(T[] input, double[] coordinates_populated_elements) 
+if (isNumeric!T)
+{
+    T[] result;
+    return result;
+}
