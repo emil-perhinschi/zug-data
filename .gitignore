@@ -18,4 +18,5 @@ zug-matrix
 libzug-matrix.a
 links.txt
 size
+tests/compile_time
 
