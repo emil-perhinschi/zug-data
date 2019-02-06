@@ -12,3 +12,5 @@ populations-test-*
 *.o
 *.obj
 *.lst
+populations
+
