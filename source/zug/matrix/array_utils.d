@@ -118,10 +118,17 @@ unittest
     assert(expected.equal(result));
 }
 
+/// works for squeezing too
 double[] stretch_row_coordinates(size_t orig_length, size_t new_length) pure
 {
 
-    immutable double spacing = ((new_length.to!double - 1) / (orig_length.to!double - 1));
+    // keep forgetting so here it is: 
+    // I'm computing the largest index for the original array and for the stretched array
+    //  - 1 because the first index is 0
+    double new_max_index = (new_length - 1).to!double;
+    double orig_max_index = (orig_length - 1).to!double;
+
+    immutable double spacing = new_max_index / orig_max_index;
     double[] stretched_coordinates = new double[orig_length];
     for (size_t i = 0; i < orig_length; i++)
     {
@@ -205,9 +212,10 @@ unittest
 }
 
 // TODO later, after I make a function to plot functions 
-T[] cubic_interpolation(T)(T[] input, double[] coordinates_populated_elements) 
-if (isNumeric!T)
+T[] cubic_interpolation(T)(T[] input, double[] coordinates_populated_elements)
+        if (isNumeric!T)
 {
     T[] result;
     return result;
 }
+

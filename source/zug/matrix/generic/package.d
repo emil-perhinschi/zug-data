@@ -244,7 +244,7 @@ struct Matrix(T) //TODO testing generic matrices (should I call them symbolic ma
         assert(orig.is_on_edge(2, 2, 3) == true);
     }
 
-    Matrix!T window(T)(Offset offset, size_t window_size, T delegate(size_t, size_t) fill)
+    Matrix!T window(T)(Offset offset, size_t window_size,  T delegate(size_t, size_t) fill)
             if (isNumeric!T)
     {
         import std.range : chunks, join;

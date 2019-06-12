@@ -345,9 +345,42 @@ unittest
     assert(result.get(1, 1) == 1);
 }
 
+
+// TODO finish this
+Matrix!T squeeze(T)(Matrix!T orig, float scale_x, float scale_y) pure
+if (isNumeric!T)
+{
+    import std.math: round;
+
+    size_t new_width = round(orig.width * scale_x).to!size_t;
+    size_t new_height = round(orig.height * scale_y).to!size_t;
+
+
+    Matrix!T result = Matrix!T(new_width, new_height);
+
+
+    return result;
+}
+
+unittest
+{
+    auto orig = Matrix!double(
+        [
+            1.1, 1.6, 1.5, 1.1, 
+            1.0, 1.3, 1.7, 1.0, 
+            1.9, 1.8, 1.0, 0.9
+        ],
+        4
+    );
+
+    auto result = squeeze!double(orig, 0.5, 0.5);
+    dbg(result, "squeeze");
+}
+
+
 /**
  * stretch_bilinear can only create an enlarged version of the original, 
- *    else use squeeze (TODO squeeze) 
+ *    else use squeeze 
  * 
  * Params:
  *   orig = Matrix!T,  orignal matrix
@@ -496,6 +529,12 @@ unittest
     auto determinant = orig.determinant2x2();
     assert(determinant == -14);
 }
+
+
+// TODO determinant of matrix 3x3
+
+// TODO determinant of matrix 4x4
+
 
 // TODO determinant of matrix larger than 2x2
 

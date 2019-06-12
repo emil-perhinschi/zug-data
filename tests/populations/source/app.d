@@ -10,7 +10,7 @@ void main()
 {
     auto settings = new HTTPServerSettings;
     settings.port = 8088;
-    settings.bindAddresses = ["::1", "127.0.0.1"];
+    settings.bindAddresses = ["127.0.0.1"];
     // see vibe.d/http/vibe/http/server.d for options
     //final class HTTPServerSettings {
     settings.accessLogToConsole = true;
@@ -18,9 +18,9 @@ void main()
     auto router = new URLRouter;
 
     router.get("/", serveStaticFile("./static/public/html/index.html"));
-    // router.get("/css/*", serveStaticFiles("./static/public/"));
-    // router.get("/img/*", serveStaticFiles("./static/public/"));
-    // router.get("/js/*", serveStaticFiles("./static/public/"));
+    router.get("/css/*", serveStaticFiles("./static/public/"));
+    router.get("/img/*", serveStaticFiles("./static/public/"));
+    router.get("/js/*", serveStaticFiles("./static/public/"));
 
     /*	router.any(
 		"*",
@@ -172,6 +172,21 @@ void tick(World world)
         //   - agents move to nearby cells based on initiative, sight, target cell population and some random number
         //   - if energy in the cell falls below a threshold half of the remaining agents are picket at random and move to nearby cells based on initiative
     }
+}
+
+struct UnitType
+{
+    int number;
+    int weapon;
+    // https://web.viu.ca/davies/H325%20Civil%20War/rations.htm
+    int rations_per_day;
+    int nominal_strength;
+}
+
+struct Unit 
+{
+    UnitType type;
+
 }
 
 World init()
