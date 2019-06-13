@@ -244,6 +244,10 @@ struct Matrix(T) //TODO testing generic matrices (should I call them symbolic ma
         assert(orig.is_on_edge(2, 2, 3) == true);
     }
 
+
+    /// fill: fill is for adding in missing data if the window is outside the matrix
+    /// window_size: makes a square window
+    /// TODO: make rectangular windows, maybe switch to window_size_x, window_size_y ?
     Matrix!T window(T)(Offset offset, size_t window_size,  T delegate(size_t, size_t) fill)
             if (isNumeric!T)
     {
