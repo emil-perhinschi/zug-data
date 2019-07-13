@@ -113,7 +113,6 @@ Matrix!T get_minor(T)(Matrix!T orig, size_t exclude_x, size_t exclude_y) pure
 
 // TODO list minors of matrix
 
-///
 Matrix!T dice(T)(Matrix!T orig, Offset offset, size_t width, size_t height) pure
 {
     import std.range : chunks;

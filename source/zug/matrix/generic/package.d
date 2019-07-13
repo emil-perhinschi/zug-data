@@ -82,16 +82,6 @@ struct Matrix(T) //TODO testing generic matrices (should I call them symbolic ma
         return this.data[this.width * y + x];
     }
 
-    /// get
-    unittest
-    {
-        Matrix!int orig = Matrix!int(3, 3);
-        orig.set(0, 0, 1);
-        assert(orig.get(0, 0) == orig.get(0));
-        orig.set(1, 1, 111);
-        assert(orig.get(1, 1) == orig.get(4));
-    }
-
     ///
     size_t data_length()
     {
@@ -113,15 +103,6 @@ struct Matrix(T) //TODO testing generic matrices (should I call them symbolic ma
         }
         return result;
     }
-    /// homogenous_coordinates
-    unittest
-    {
-        auto orig = Matrix!int([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11], 3);
-        dbg(orig, "Matrix 3x4 orig, testing coordinates");
-        auto coord = orig.homogenous_coordinates!size_t();
-        dbg(coord, "homogenous coordinates");
-
-    }
 
     ///
     Matrix!T coordinates(T)() if (isNumeric!T)
@@ -136,15 +117,6 @@ struct Matrix(T) //TODO testing generic matrices (should I call them symbolic ma
         }
         return result;
     }
-    /// coordinates
-    unittest
-    {
-        auto orig = Matrix!int([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11], 3);
-        dbg(orig, "Matrix 3x4 orig, testing coordinates");
-        auto coord = orig.coordinates!size_t();
-        dbg(coord, "coordinates");
-
-    }
 
     ///
     T[] column(size_t x)
@@ -157,14 +129,6 @@ struct Matrix(T) //TODO testing generic matrices (should I call them symbolic ma
         return result;
     }
 
-    /// get Matrix column
-    unittest
-    {
-        Matrix!int orig = Matrix!int([1, 2, 3, 4, 5, 6, 7, 8, 9], 3);
-        dbg!int(orig, "matrix for column");
-        dbg!int(orig.column(1), orig.height, "column 1");
-    }
-
     /// set column
     void column(T[] new_column, size_t x)
     {
@@ -172,18 +136,6 @@ struct Matrix(T) //TODO testing generic matrices (should I call them symbolic ma
         {
             this.set(i * this.width + x, new_column[i]);
         }
-    }
-
-    unittest
-    {
-        import std.algorithm.comparison : equal;
-
-        auto orig = Matrix!int(5, 5);
-        int[] column = [5, 5, 5, 5, 5];
-        orig.column(column, 2);
-        dbg(orig, "column set");
-        auto check = orig.column(2);
-        assert(check.equal(column));
     }
 
     ///
@@ -197,32 +149,12 @@ struct Matrix(T) //TODO testing generic matrices (should I call them symbolic ma
         return result;
     }
 
-    /// get Matrix row
-    unittest
-    {
-        Matrix!int orig = Matrix!int([1, 2, 3, 4, 5, 6, 7, 8, 9], 3);
-        dbg!int(orig, "matrix for row");
-        dbg!int(orig.row(1), orig.width, "row 1");
-    }
-
     /// set row
     void row(T[] new_row, size_t y)
     {
         size_t first_id = y * width;
         size_t last_id = first_id + width;
         this.data[first_id .. last_id] = new_row;
-    }
-
-    unittest
-    {
-        import std.algorithm.comparison : equal;
-
-        auto orig = Matrix!int(5, 5);
-        int[] row = [5, 5, 5, 5, 5];
-        orig.row(row, 2);
-        dbg(orig, "row set");
-        auto check = orig.row(2);
-        assert(check.equal(row));
     }
 
     ///
@@ -235,15 +167,6 @@ struct Matrix(T) //TODO testing generic matrices (should I call them symbolic ma
         }
         return false;
     }
-
-    /// is_on_edge
-    unittest
-    {
-        auto orig = Matrix!int(10, 10);
-        assert(orig.is_on_edge(0, 0, 1) == true);
-        assert(orig.is_on_edge(2, 2, 3) == true);
-    }
-
 
     /// fill: fill is for adding in missing data if the window is outside the matrix
     /// window_size: makes a square window
@@ -278,70 +201,14 @@ struct Matrix(T) //TODO testing generic matrices (should I call them symbolic ma
         }
         return Matrix!T(result.join(), window_size);
     }
-    /// window
-    unittest
-    {
-        // dfmt off 
-    float[] data = [
-        1, 2, 3, 4, 5, 6, 7,
-        1, 2, 3, 4, 5, 6, 7, 
-        1, 2, 3, 4, 5, 6, 7, 
-        1, 2, 3, 4, 5, 6, 7, 
-        1, 2, 3, 4, 5, 6, 7, 
-        1, 2, 3, 4, 5, 6, 7, 
-        1, 2, 3, 4, 5, 6, 7
-    ];
-    // dfmt on
-
-        Matrix!float orig = Matrix!float(data, 7);
-        auto r1 = orig.window!float(Offset(-3, -3), 4, delegate(size_t x, size_t y) => 0);
-        debug dbg(r1, "Matrix.window");
-        debug dbg(orig.window!float(Offset(-2, -2), 4, delegate(size_t x,
-                size_t y) => 0), "Matrix.window");
-        debug dbg(orig.window!float(Offset(-1, -1), 4, delegate(size_t x,
-                size_t y) => 0), "Matrix.window");
-        debug dbg(orig.window!float(Offset(0, 0), 4, delegate(size_t x,
-                size_t y) => 0), "Matrix.window");
-    }
 
     Matrix!T copy()
     {
         return Matrix!T(this.data.dup, this.width);
     }
-
-    unittest
-    {
-        auto orig = Matrix!float([0, 1, 2, 3, 4, 5], 3);
-        auto copy = orig.copy();
-        dbg(copy, "copy before modified");
-
-        for (size_t i = 0; i < orig.data_length; i++)
-        {
-            assert(orig.get(i) == copy.get(i));
-        }
-
-        copy.set(0, 0, 1000);
-        dbg(copy, "copy modified");
-        dbg(orig, "copy orig");
-
-        assert(orig.get(0, 0) != copy.get(0, 0));
-    }
 }
 
-/// Matrix instantiation
-unittest
-{
-    auto orig = Matrix!int([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11], 3);
-
-    dbg(orig, "Matrix 3x4, testing instatiation");
-    assert(orig.get(0, 0) == 0, "get 0,0");
-    assert(orig.get(1, 1) == 4, "get 1,1");
-    assert(orig.get(2, 2) == 8, "get 2,2");
-    assert(orig.get(2, 3) == 11, "get 2,3");
-}
-
-
-/**
+/*
   Notes: the numbers in the transformation matrix are not about how many rows and 
   columns will the new matrix have after interpolation, instead are relevant only
   for each vector describing the coordinates of each pixel
