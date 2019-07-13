@@ -67,22 +67,3 @@ struct CartesianMatrix(T)
         return this.matrix;
     }
 }
-
-
-unittest {
-    import std.stdio: writeln;
-    import std.range: array, iota;
-    // import std.algorithm;
-    int[] data = array(iota(1600));
-    auto cartesian_matrix = CartesianMatrix!int(data, 40, 20,20);
-    writeln(cartesian_matrix);
-    auto got_data = cartesian_matrix.data();
-    assert(cartesian_matrix.get(0,0) == cartesian_matrix.data.get(20,20));
-
-    auto viewport = cartesian_matrix.window(Offset(5,5), 5);
-    dbg(viewport, "cartesian viewport");
-
-    auto viewport_corner = cartesian_matrix.get(5,5);
-    writeln(viewport_corner, "viewport corner");
-    assert(viewport.get(0,0) == cartesian_matrix.get(5,5));
-}

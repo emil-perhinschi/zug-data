@@ -10,7 +10,18 @@ version (unittest)
     public import zug.matrix.dbg;
 }
 
-///
+/**
+* Params: 
+*   size = how long the resulting array should be
+*   min  = minimum value in the resulting array
+*   max  = maximum value in the resulting array
+*   seed = integer - the seed
+*
+* Returns:
+*   result = array of length "size" with values between "min" and "max"
+* 
+* uses std.random.uniform to generate the values
+*/
 T[] random_array(T)(size_t size, T min, T max, uint seed) if (isNumeric!T)
 {
     import std.random : Random, uniform;
@@ -22,46 +33,6 @@ T[] random_array(T)(size_t size, T min, T max, uint seed) if (isNumeric!T)
         result[i] = uniform(min, max, rnd);
     }
     return result;
-}
-
-/// random_array
-unittest
-{
-    import std.range : take;
-    import std.random : Random, uniform;
-
-    uint seed = 42;
-    auto result = random_array!int(10, 0, 15, seed);
-
-    assert(result[0] == 12);
-    assert(result[1] == 2);
-
-    auto result_float = random_array!float(10, 0, 15, seed);
-    // TODO figure out how to check floats, this does not work
-    // writeln(result_float);
-    // assert(result_float[0] == 5.6181 ); 
-
-    size_t how_big = 64;
-    auto orig = Matrix!int(random_array!int(how_big, 0, 255, seed), 8);
-
-    // should look like this
-    //      0    1    2    3    4    5    6    7
-    // 0 # [132, 167, 181, 199, 126, 125,  70, 164]
-    // 1 # [85,   38,  43, 124, 200,  39, 171,  37]
-    // 2 # [140,  10, 207, 106, 229, 176,  73, 206]
-    // 3 # [209, 208, 146, 189, 142,  79, 207, 150]
-    // 4 # [205, 184,  98, 229, 224, 176,   7,  90]
-    // 5 # [221,  12,  97,  69, 237,   8, 218, 199]
-    // 6 # [243,   2, 195,  54,  85, 189,  61, 169]
-    // 7 # [250, 179, 158, 243, 101,   0,  95, 250]
-    assert(orig.get(0, 0) == 132);
-    assert(orig.get(1, 1) == 38);
-    assert(orig.get(1, 3) == 208);
-    assert(orig.get(3, 1) == 124);
-    assert(orig.get(3, 3) == 189);
-    assert(orig.get(3, 5) == 69);
-    assert(orig.get(3, 7) == 243);
-    assert(orig.get(5, 5) == 8);
 }
 
 /**
@@ -103,19 +74,6 @@ do
     }
 
     return result;
-}
-
-unittest
-{
-    import std.algorithm.comparison : equal;
-
-    float[] orig = new float[10];
-    orig[0] = 1;
-    orig[9] = 10;
-    float[] result = orig.segment_linear_interpolation();
-    float[] expected = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
-    dbg(result, 1, "linear_interpolation result");
-    assert(expected.equal(result));
 }
 
 /// works for squeezing too
@@ -182,35 +140,6 @@ T[] stretch_row(T)(T[] orig, size_t new_length) pure
     return stretched;
 }
 
-/// Stretch row
-unittest
-{
-    import std.algorithm.comparison : equal;
-
-    float[] orig = [0, 1, 2, 3, 4];
-    auto result = stretch_row(orig, 15);
-    // expected [0, 0.285714, 0.571429, 1, 1.14286, 1.42857, 1.71429, 2, 2.28571, 2.57143, 3, 3.14286, 3.42857, 3.71429, 4]
-    // assert(result.equal(expected)); ... floats will be floats :-/
-    // writeln("result", result);
-    assert(result.length == 15);
-    assert(result[0] == orig[0]);
-    assert(result[3] == orig[1]);
-    assert(result[7] == orig[2]);
-    assert(result[10] == orig[3]);
-    assert(result[14] == orig[4]);
-}
-
-/// Stretch row
-unittest
-{
-    import std.algorithm.comparison : equal;
-
-    int[] orig = [0, 25, 75, 0, 255];
-    int[] result = stretch_row(orig, 15);
-    int[] expected = [0, 7, 14, 25, 32, 46, 60, 75, 53, 32, 0, 36, 109, 182, 255];
-    assert(result.equal(expected));
-}
-
 // TODO later, after I make a function to plot functions 
 T[] cubic_interpolation(T)(T[] input, double[] coordinates_populated_elements)
         if (isNumeric!T)
@@ -218,4 +147,3 @@ T[] cubic_interpolation(T)(T[] input, double[] coordinates_populated_elements)
     T[] result;
     return result;
 }
-
