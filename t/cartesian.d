@@ -1,5 +1,5 @@
 #!/usr/bin/env dub
-/+dub.json: { "dependencies": { "zug-tap": "*", "zug-matrix": { "path": "../" }  } } +/
+/+dub.json: { "dependencies": { "zug-tap": "*", "zug-data": { "path": "../" }  } } +/
 
 void main() 
 {
