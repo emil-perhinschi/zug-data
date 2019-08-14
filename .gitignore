@@ -3,19 +3,13 @@ docs.json
 __dummy.html
 docs/
 __dummy_docs/
-zug-matrix.so
-zug-matrix.dylib
-zug-matrix.dll
-zug-matrix.a
-zug-matrix.lib
-zug-matrix-test-*
-zug-matrix
+libzug-data.a
+zug-data-test-*
 *.exe
 *.o
 *.obj
 *.lst
 
-libzug-matrix.a
 links.txt
 size
 tests/compile_time
