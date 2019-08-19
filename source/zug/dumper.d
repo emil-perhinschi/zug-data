@@ -23,19 +23,6 @@ string dumper(string[string] data) {
     return "{\n" ~ result.join(",\n") ~ "\n}";
 }
 
-unittest {
-    string expected = `{
-  "b" => "1",
-  "a" => "1"
-},
-{
-  "b" => "2",
-  "a" => "2"
-}`;
-    string dumped = dumper([["a":"1","b":"1"], ["a": "2", "b":"2"]]);
-    assert(expected == dumped, "dumped data looks like expected");    
-}
-
 
 // TODO: this dumps the names but not the types, instead puts "string" 
 void dumper(T)(T[] array_of_structs) {
@@ -47,35 +34,20 @@ void dumper(T)(T[] array_of_structs) {
     }
 }
 
-unittest
-{
-    import std.json;
-
-    struct Test {
-        int i = 777;
-        float j = 3.555;
-    }
-
-    struct Test1 {
-        int i = 888;
-        Test bla = Test();
-        JSONValue qewert;
-    }
-
-    auto test = Test1();
-
-    dumper!Test1(test);
-}
 
 // http://forum.dlang.org/post/gqqpl2$1ujg$1@digitalmars.com
-void dumper(T)(T obj, uint depth = 0) 
-if ( is(T == struct) || is(T == class) ) {
-   
-    writeln(T.stringof, ": {");
+string dumper(T)(T obj, uint depth = 0) 
+if ( is(T == struct) || is(T == class) ) 
+{
+    import std.format: format;
+
+    string result = "";
+    result ~= T.stringof ~ ": {\n";
 
     foreach(i,_;obj.tupleof) {
         auto element = obj.tupleof[i];
         auto element_type = typeid(element);
+        writeln("+++++", element_type);
         if (is(element_type == struct)) {
             writeln("is struct");
         }
@@ -83,15 +55,22 @@ if ( is(T == struct) || is(T == class) ) {
         if (is(element_type == class)) {
             writeln("is class");
         }
-        writeln("# ", element_type);
-        writefln("  (%s) %s : %s,", 
-            element_type, 
-            obj.tupleof[i].stringof[4..$], 
-            obj.tupleof[i]
-        );
-    }
-    writefln("}");
+        result ~= format!"  (%s) %s : %s,\n"(
+                element_type, 
+                obj.tupleof[i].stringof[4..$], 
+                obj.tupleof[i]
+            );
 
+        // writeln("# ", element_type);
+        // writefln("  (%s) %s : %s,", 
+        //     element_type, 
+        //     obj.tupleof[i].stringof[4..$], 
+        //     obj.tupleof[i]
+        // );
+    }
+    result ~= "}";
+
+    return result;
 }
 
 // TODO: is it possible to make this a template ? 
