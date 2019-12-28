@@ -111,8 +111,6 @@ Matrix!T get_minor(T)(Matrix!T orig, size_t exclude_x, size_t exclude_y) pure
     return result;
 }
 
-// TODO list minors of matrix
-
 Matrix!T dice(T)(Matrix!T orig, Offset offset, size_t width, size_t height) pure
 {
     import std.range : chunks;
@@ -129,6 +127,8 @@ Matrix!T dice(T)(Matrix!T orig, Offset offset, size_t width, size_t height) pure
     return Matrix!T(result, width);
 }
 
+
+//TODO testme
 Matrix!T enlarge(T)(Matrix!T orig, int scale_x, int scale_y) pure
 in
 {
@@ -137,20 +137,66 @@ in
 }
 do
 {
+    import std.conv: to;
 
     size_t new_width = orig.width * scale_x;
     size_t new_height = orig.height * scale_y;
+
     auto result = Matrix!T(new_width, new_height);
 
     immutable size_t full_length = new_width * new_height;
     for (size_t i = 0; i < full_length; i++)
     {
-        auto orig_x = (i % new_width) / scale_x; // SEEME .to!size_t ??
-        auto orig_y = (i / new_width) / scale_y; // SEEME .to!size_t ??
+        size_t orig_x = (i % new_width).to!size_t / scale_x; // SEEME .to!size_t ??
+        size_t orig_y = (i / new_width).to!size_t / scale_y; // SEEME .to!size_t ??
         result.set(i, orig.get(orig_x, orig_y));
     }
 
     return result;
+}
+
+// draw a rectangular frame 
+Matrix!T add_frame(T)(
+    Matrix!T orig,
+     Offset offset, 
+     size_t frame_width, size_t frame_height, 
+     T frame_data
+)
+in
+{
+    assert(orig.width >= offset.x + frame_width);
+    assert(orig.height >= offset.y + frame_height);
+}
+do
+{
+    import std.stdio;
+
+    auto copy = orig.copy;
+
+    auto top_left = offset;
+    auto top_right = Offset(offset.x + frame_width, offset.y);
+    auto bottom_left = Offset(offset.x, offset.y + frame_height);
+    auto bottom_right = Offset(offset.x + frame_width, offset.y + frame_height);
+    // i < top_right.x because (top_right.x, top_right.y) will be filled when drawing the vertical line
+    //   same in various places below
+
+    for (size_t i = top_left.x; i < top_right.x; i++) {
+        copy.set(i, top_left.y, frame_data);
+    }
+
+    for (size_t i = bottom_left.x; i < bottom_right.x; i++) {
+        copy.set(i, bottom_left.y, frame_data);
+    }
+
+    for (size_t i = (top_left.y+1); i < bottom_left.y; i++) {
+        copy.set(top_left.x, i, frame_data);
+    }
+
+    for (size_t i = (top_right.y+1); i < bottom_right.y; i++) {
+        copy.set(top_right.x, i, frame_data);
+    }
+
+    return copy;
 }
 
 
@@ -288,3 +334,13 @@ bool equal(T)(Matrix!T first, Matrix!T second)
     return false;
 }
 
+Matrix!T apply_filter(T)(T delegate(T) filter ) 
+{
+	size_t width = matrix.width;
+	auto result = new T[matrix.data_length];
+	for (size_t i = 0; i < matrix.data_length; i++) {
+		auto old = matrix.get(i);
+		result[i] = old.to_average!(T,ubyte)();
+	}
+	return Matrix!T(result, matrix.width);
+}

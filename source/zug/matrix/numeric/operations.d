@@ -1,4 +1,5 @@
 module zug.matrix.numeric.operations;
+
 import std.traits : isNumeric, isIntegral;
 import std.conv : to;
 import zug.matrix.generic;

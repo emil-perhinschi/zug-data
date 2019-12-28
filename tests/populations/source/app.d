@@ -46,7 +46,6 @@ void main()
 
 void png_from_matrix(HTTPServerRequest req, HTTPServerResponse res)
 {
-    
 
 }
 
@@ -183,7 +182,7 @@ struct UnitType
     int nominal_strength;
 }
 
-struct Unit 
+struct Unit
 {
     UnitType type;
 

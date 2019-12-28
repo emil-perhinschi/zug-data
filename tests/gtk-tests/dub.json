@@ -1,0 +1,14 @@
+{
+	"authors": [
+		"Emil Nicolaie Perhinschi"
+	],
+	"copyright": "Copyright © 2019, Emil Nicolaie Perhinschi",
+	"dependencies": {
+		"arsd-official:image_files": "~>4.4.1",
+		"gtk-d": "~>3.9.0",
+		"zug-data": ">=0.0.0"
+	},
+	"description": "gtk tests",
+	"license": "proprietary",
+	"name": "gtk-tests"
+}

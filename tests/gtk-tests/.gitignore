@@ -1,0 +1,16 @@
+.dub
+docs.json
+__dummy.html
+docs/
+/gtk-tests
+gtk-tests.so
+gtk-tests.dylib
+gtk-tests.dll
+gtk-tests.a
+gtk-tests.lib
+gtk-tests-test-*
+gtk-tests_averaged
+*.exe
+*.o
+*.obj
+*.lst

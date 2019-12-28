@@ -308,3 +308,17 @@ do
 }
 //TODO unittest for scale_coordinates
 
+
+char[] to_greyscale_bitmap(T)(Matrix!T orig) 
+{
+    import std.conv: to;
+    import std.stdio: writeln;
+    char[] result;
+    char alpha = 0;
+    foreach (T value; orig.data) {
+        // writeln([ value, value, value, alpha ]);
+        result ~= [ value.to!char, value.to!char, value.to!char];
+    }
+
+    return result;
+}
