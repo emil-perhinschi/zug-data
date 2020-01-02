@@ -19,9 +19,9 @@ void main(string[] args)
 	import std.conv: to;
 
 	Main.init(args);
-	MainWindow app = new MainWindow("Matrix to images");
+	MainWindow app = new MainWindow("zug-matrix to images");
 	app.setSizeRequest(640, 360);
-	app.addOnDestroy(delegate void(Widget w) { quitApp(); });
+	app.addOnDestroy(delegate void(Widget w) { 	Main.quit(); });
 
 	writeln("starting ...");
 	auto image_versions = new Box(Orientation.VERTICAL, 10);
@@ -276,75 +276,3 @@ Matrix!T to_average_values(T)(Matrix!T matrix) {
 	return Matrix!T(result, matrix.width);
 }
 
-
-// class AppBox : Box
-// {
-// 	MyDrawingArea myDrawingArea;
-
-// 	this()
-// 	{
-// 		super(Orientation.VERTICAL, 10);
-
-// 		myDrawingArea = new MyDrawingArea();
-
-// 		packStart(myDrawingArea, true, true, 0); // LEFT justify
-
-// 	}
-// }
-
-// class MyDrawingArea : DrawingArea
-// {
-// 	GtkAllocation size; // the area assigned to the DrawingArea by its parent
-// 	Pixbuf pixbuf; // an 8-bit/pixel image buffer
-// 	string[] jpegOptions, jpegOptionValues;
-// 	int xOffset = 0, yOffset = 0;
-
-// 	this()
-// 	{
-// 		addOnDraw(&onDraw);
-// 	}
-
-// 	bool onDraw(Scoped!Context context, Widget w)
-// 	{
-// 		import gdkpixbuf.c.types: GdkColorspace;
-
-// 		char[] data = [
-// 			0,0,0,0, 55,155,255,1, 0,0,0,0, 
-// 			0,0,0,0, 55,155,255,1, 0,0,0,0, 
-// 			0,0,0,0, 55,155,255,1, 0,0,0,0, 
-// 			0,0,0,0, 55,155,255,1, 0,0,0,0, 
-// 		];
-
-// 		pixbuf = new Pixbuf(data, GdkColorspace.RGB, false, 8, 3, 4, 12, null, null);
-
-// 		return (true);
-// 	}
-// }
-
-//dfmt off
-	// char[] bitmapped = [
-	// 	0,0,0,0, 55,155,255,1, 0,0,0,0, 0,0,0,0, 55,155,255,1, 0,0,0,0, 0,0,0,0, 55,155,255,1, 0,0,0,0,
-	// 	0,0,0,0, 55,155,255,1, 0,0,0,0, 0,0,0,0, 55,155,255,1, 0,0,0,0, 0,0,0,0, 55,155,255,1, 0,0,0,0,
-	// 	0,0,0,0, 55,155,255,1, 0,0,0,0, 0,0,0,0, 55,155,255,1, 0,0,0,0, 0,0,0,0, 55,155,255,1, 0,0,0,0,
-	// 	0,0,0,0, 55,155,255,1, 0,0,0,0, 0,0,0,0, 55,155,255,1, 0,0,0,0, 0,0,0,0, 55,155,255,1, 0,0,0,0,
-	// 	0,0,0,0, 55,155,255,1, 0,0,0,0, 0,0,0,0, 55,155,255,1, 0,0,0,0, 0,0,0,0, 55,155,255,1, 0,0,0,0,
-	// 	0,0,0,0, 55,155,255,1, 0,0,0,0, 0,0,0,0, 55,155,255,1, 0,0,0,0, 0,0,0,0, 55,155,255,1, 0,0,0,0,
-	// 	0,0,0,0, 55,155,255,1, 0,0,0,0, 0,0,0,0, 55,155,255,1, 0,0,0,0, 0,0,0,0, 55,155,255,1, 0,0,0,0,
-	// 	0,0,0,0, 55,155,255,1, 0,0,0,0, 0,0,0,0, 55,155,255,1, 0,0,0,0, 0,0,0,0, 55,155,255,1, 0,0,0,0,
-	// 	0,0,0,0, 55,155,255,1, 0,0,0,0, 0,0,0,0, 55,155,255,1, 0,0,0,0, 0,0,0,0, 55,155,255,1, 0,0,0,0,
-	// 	0,0,0,0, 55,155,255,1, 0,0,0,0, 0,0,0,0, 55,155,255,1, 0,0,0,0, 0,0,0,0, 55,155,255,1, 0,0,0,0,
-	// 	0,0,0,0, 55,155,255,1, 0,0,0,0, 0,0,0,0, 55,155,255,1, 0,0,0,0, 0,0,0,0, 55,155,255,1, 0,0,0,0,
-	// 	0,0,0,0, 55,155,255,1, 0,0,0,0, 0,0,0,0, 55,155,255,1, 0,0,0,0, 0,0,0,0, 55,155,255,1, 0,0,0,0,				
-	// ];
-//dfmt on
-
-
-void quitApp()
-{
-	// This exists in case we want to do anything
-	// before exiting such as warn the user to
-	// save work.
-	writeln("Bye.");
-	Main.quit();
-
-}
