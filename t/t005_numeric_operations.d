@@ -1,8 +1,7 @@
-#!/usr/bin/env dub
+#! /usr/bin/env dub
 /+dub.json: { "dependencies": { "zug-tap": "*", "zug-data": { "path": "../" }  } } +/
 
-void main()
-{
+void main() {
     import std.range : take;
     import std.random : Random, uniform;
 
@@ -16,8 +15,8 @@ void main()
     {
         import zug.matrix.generic.operations : equal;
 
-        auto orig = Matrix!int([1, 2, 3, 4, 5, 6, 7, 8, 9], 3);
-        auto expected = Matrix!int([3, 6, 9, 12, 15, 18, 21, 24, 27], 3);
+        auto orig = Matrix!int ([1, 2, 3, 4, 5, 6, 7, 8, 9], 3);
+        auto expected = Matrix!int ([3, 6, 9, 12, 15, 18, 21, 24, 27], 3);
         int scalar = 3;
         auto result = orig.multiply(scalar);
         tap.ok(result.equal(expected));
@@ -26,11 +25,11 @@ void main()
 
     /// multiply: plain
     {
-        auto first = Matrix!int([1, 2, 3, 4, 5, 6], 3);
-        auto second = Matrix!int([7, 8, 9, 10, 11, 12], 2);
+        auto first = Matrix!int ([1, 2, 3, 4, 5, 6], 3);
+        auto second = Matrix!int ([7, 8, 9, 10, 11, 12], 2);
         dbg(first, "multiplied first");
         dbg(second, "multiplied second");
-        auto result = multiply!int(first, second);
+        auto result = multiply!int (first, second);
         dbg(result, "multiplied result");
 
         tap.ok(result.get(0, 0) == 58);
@@ -41,11 +40,11 @@ void main()
 
     /// multiply: float
     {
-        auto first = Matrix!float([1, 2, 3, 4, 5, 6], 3);
-        auto second = Matrix!float([7, 8, 9, 10, 11, 12], 2);
+        auto first = Matrix!float ([1, 2, 3, 4, 5, 6], 3);
+        auto second = Matrix!float ([7, 8, 9, 10, 11, 12], 2);
         dbg(first, "multiplied first float");
         dbg(second, "multiplied second float");
-        auto result = multiply!float(first, second);
+        auto result = multiply!float (first, second);
         dbg(result, "multiplied result float");
 
         tap.ok(result.get(0, 0) == 58);
@@ -58,8 +57,8 @@ void main()
     {
         import zug.matrix.generic.operations : equal;
 
-        auto orig = Matrix!int([1, 2, 3, 4, 5, 6, 7, 8, 9], 3);
-        auto expected = Matrix!int([2, 3, 4, 5, 6, 7, 8, 9, 10], 3);
+        auto orig = Matrix!int ([1, 2, 3, 4, 5, 6, 7, 8, 9], 3);
+        auto expected = Matrix!int ([2, 3, 4, 5, 6, 7, 8, 9, 10], 3);
         int scalar = 1;
         auto result = orig.add(scalar);
         tap.ok(result.equal(expected));
@@ -69,10 +68,10 @@ void main()
     /// add
     {
 
-        auto first = Matrix!long([1, 2, 3, 4], 4);
-        auto second = Matrix!long([0, 2, 4, 6], 4);
+        auto first = Matrix!long ([1, 2, 3, 4], 4);
+        auto second = Matrix!long ([0, 2, 4, 6], 4);
 
-        auto result = add!long(first, second);
+        auto result = add!long (first, second);
         tap.ok(result.get(0) == 1);
         tap.ok(result.get(1) == 4);
         tap.ok(result.get(2) == 7);
@@ -81,7 +80,7 @@ void main()
 
     /// replace_elements
     {
-        auto orig = Matrix!int([1, 0, -1, 5, 7], 5);
+        auto orig = Matrix!int ([1, 0, -1, 5, 7], 5);
         dbg(orig, "replace_elements orig");
         auto filter = delegate bool(int i) => i < 0;
         auto transformer = delegate int(int i) => 0;
@@ -96,7 +95,7 @@ void main()
     }
 
     {
-        auto orig = Matrix!int(3, 3);
+        auto orig = Matrix!int (3, 3);
         size_t x = 1;
         size_t y = 1;
         orig.set(x, y, 1);
@@ -109,7 +108,7 @@ void main()
     {
         import zug.matrix : random_array, shaper_square;
 
-        auto orig = Matrix!int(random_array!int(64, 0, 255, 12_341_234), 8);
+        auto orig = Matrix!int (random_array!int (64, 0, 255, 12_341_234), 8);
         dbg(orig, "moving_average orig ");
 
         size_t window_size = 2;
@@ -121,7 +120,7 @@ void main()
     }
 
     {
-        auto orig = Matrix!double([1.1, 1.6, 1.5, 1.0, 1.3, 1.7, 1.0, 1.9, 1.8], 3);
+        auto orig = Matrix!double ([1.1, 1.6, 1.5, 1.0, 1.3, 1.7, 1.0, 1.9, 1.8], 3);
         dbg(orig);
 
         auto result = orig.round_elements!(double, size_t)();
@@ -137,47 +136,47 @@ void main()
     }
 
     {
-        auto orig = Matrix!double([1.1, 1.6, 1.5, 1.1, 1.0, 1.3, 1.7, 1.0, 1.9, 1.8, 1.0, 0.9], 4);
+        auto orig = Matrix!double ([1.1, 1.6, 1.5, 1.1, 1.0, 1.3, 1.7, 1.0, 1.9, 1.8, 1.0, 0.9], 4);
 
-        auto result = squeeze!double(orig, 0.5, 0.5);
+        auto result = squeeze!double (orig, 0.5, 0.5);
         dbg(result, "squeeze");
     }
 
     // TODO visual inspection works fine but add some tap.oks too
     {
 
-        auto orig = Matrix!int([0, 5, 10, 15, 20, 25, 30, 35, 40], 3);
+        auto orig = Matrix!int ([0, 5, 10, 15, 20, 25, 30, 35, 40], 3);
         dbg(orig.coordinates!float, "old_coords");
-        auto result = orig.stretch_bilinear!int(2, 2);
+        auto result = orig.stretch_bilinear!int (2, 2);
         dbg(result, "sssssssssssssssstretch ");
     }
 
     // TODO visual inspection works fine but add some tap.oks too
     {
-        auto orig = Matrix!float([0.1, 5.3, 11.2, 14.0, 19.8, 15.1, 30.3, 35.1, 41.7], 3);
+        auto orig = Matrix!float ([0.1, 5.3, 11.2, 14.0, 19.8, 15.1, 30.3, 35.1, 41.7], 3);
         dbg(orig.coordinates!float, "old_coords");
-        auto result = orig.stretch_bilinear!float(2, 2);
+        auto result = orig.stretch_bilinear!float (2, 2);
         dbg(result, "sssssssssssssssstretch floats");
 
-        auto large = Matrix!double(sample_2d_array!double(), 18);
-        auto large_result = large.stretch_bilinear!double(3, 3);
+        auto large = Matrix!double (sample_2d_array!double (), 18);
+        auto large_result = large.stretch_bilinear!double (3, 3);
         dbg(large_result, "sssssssssssssssstretch doubles large array");
     }
 
     {
         import std.stdio : writeln;
 
-        auto orig = Matrix!int([3, 8, 4, 6], 2);
+        auto orig = Matrix!int ([3, 8, 4, 6], 2);
         auto determinant = orig.determinant2x2();
         tap.ok(determinant == -14);
     }
 
     /// normalize!float
     {
-        auto orig = Matrix!float([1.1, 100.1, 50.1], 3);
+        auto orig = Matrix!float ([1.1, 100.1, 50.1], 3);
         immutable float normal_min = 0.0;
         immutable float normal_max = 16.0;
-        auto result = orig.normalize!float(normal_min, normal_max);
+        auto result = orig.normalize!float (normal_min, normal_max);
 
         tap.ok(result.get(0) == 0);
         tap.ok(result.get(1) == 16);
@@ -186,10 +185,10 @@ void main()
 
     /// normalize!double
     {
-        auto orig = Matrix!double([0, 255, 125], 3);
+        auto orig = Matrix!double ([0, 255, 125], 3);
         immutable double normal_min = 0;
         immutable double normal_max = 16;
-        auto result = orig.normalize!double(normal_min, normal_max);
+        auto result = orig.normalize!double (normal_min, normal_max);
 
         tap.ok(result.get(0) == 0);
         tap.ok(result.get(1) == 16);
@@ -198,10 +197,10 @@ void main()
 
     /// normalize!float
     {
-        auto orig = Matrix!float([1.1, 100.1, 50.1], 3);
+        auto orig = Matrix!float ([1.1, 100.1, 50.1], 3);
         immutable float normal_min = 0.0;
         immutable float normal_max = 16.0;
-        auto result = orig.normalize_vector_operation!float(normal_min, normal_max);
+        auto result = orig.normalize_vector_operation!float (normal_min, normal_max);
         dbg(result, "normalized using vector operations");
         tap.ok(result.get(0) == 0);
         tap.ok(result.get(1) == 16);

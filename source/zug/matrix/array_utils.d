@@ -5,13 +5,12 @@ import std.conv : to;
 
 import zug.matrix.generic;
 
-version (unittest)
-{
+version (unittest) {
     public import zug.matrix.dbg;
 }
 
 /**
-* Params: 
+* Params:
 *   size = how long the resulting array should be
 *   min  = minimum value in the resulting array
 *   max  = maximum value in the resulting array
@@ -19,34 +18,31 @@ version (unittest)
 *
 * Returns:
 *   result = array of length "size" with values between "min" and "max"
-* 
+*
 * uses std.random.uniform to generate the values
 */
-T[] random_array(T)(size_t size, T min, T max, uint seed) if (isNumeric!T)
-{
+T[] random_array(T)(size_t size, T min, T max, uint seed) if (isNumeric!T) {
     import std.random : Random, uniform;
 
     auto rnd = Random(seed);
-    T[] result = new T[](size);
-    foreach (size_t i; 0 .. size)
-    {
+    T[] result = new T[] (size);
+    foreach (size_t i; 0 .. size) {
         result[i] = uniform(min, max, rnd);
     }
     return result;
 }
 
 /**
- * Params: 
+ * Params:
  *   input = an array with the first and last elements set, we need to interpolate
- *                 those in the middle we don't look at the values in the middle, various 
+ *                 those in the middle we don't look at the values in the middle, various
  *                 numeric types have various defaults (0 for int, nan for float etc.)
  *
  * Returns:
- *   result = a new array with the values from 1 to the penultimate interpolated 
+ *   result = a new array with the values from 1 to the penultimate interpolated
  */
 T[] segment_linear_interpolation(T)(T[] input) pure
-in
-{
+in {
     assert(input.length >= 3);
 }
 do
@@ -63,8 +59,7 @@ do
     //    maybe if the distance between the populated rows is big enough ?
     // A: not really, need the last computed value before going on, probably, I think
     // TODO look into this later
-    for (size_t i = 1; i < input.length - 1; i++)
-    {
+    for (size_t i = 1; i < input.length - 1; i++) {
         // stepping over 1, so just add the slope to save on computations
         // SEEME: maybe if using only the start, the end and the position in betwee
         //    I don't need the last_computed_value, so I can make this parallel ?
@@ -77,10 +72,9 @@ do
 }
 
 /// works for squeezing too
-double[] stretch_row_coordinates(size_t orig_length, size_t new_length) pure
-{
+double[] stretch_row_coordinates(size_t orig_length, size_t new_length) pure {
 
-    // keep forgetting so here it is: 
+    // keep forgetting so here it is:
     // I'm computing the largest index for the original array and for the stretched array
     //  - 1 because the first index is 0
     double new_max_index = (new_length - 1).to!double;
@@ -88,8 +82,7 @@ double[] stretch_row_coordinates(size_t orig_length, size_t new_length) pure
 
     immutable double spacing = new_max_index / orig_max_index;
     double[] stretched_coordinates = new double[orig_length];
-    for (size_t i = 0; i < orig_length; i++)
-    {
+    for (size_t i = 0; i < orig_length; i++) {
         stretched_coordinates[i] = i.to!double * spacing;
     }
 
@@ -99,8 +92,7 @@ double[] stretch_row_coordinates(size_t orig_length, size_t new_length) pure
     return stretched_coordinates;
 }
 
-T[] stretch_row(T)(T[] orig, size_t new_length) pure
-{
+T[] stretch_row(T)(T[] orig, size_t new_length) pure {
 
     double[] stretched_coordinates = stretch_row_coordinates(orig.length, new_length);
 
@@ -109,29 +101,22 @@ T[] stretch_row(T)(T[] orig, size_t new_length) pure
     double prev_coordinates = 0;
     T[] stretched = new T[new_length];
 
-    for (size_t i = 0; i < new_length; i++)
-    {
-        if (next_coordinates - i <= (next_coordinates % 1))
-        {
+    for (size_t i = 0; i < new_length; i++) {
+        if (next_coordinates - i <= (next_coordinates % 1)) {
             stretched[i] = orig[orig_coordinates];
             prev_coordinates = next_coordinates;
             orig_coordinates += 1;
-            if (orig_coordinates < stretched_coordinates.length)
-            {
+            if (orig_coordinates < stretched_coordinates.length) {
                 next_coordinates = stretched_coordinates[orig_coordinates];
-            }
-            else
-            {
+            } else {
                 break;
             }
-        }
-        else
-        {
+        } else {
             immutable double slope = (orig[orig_coordinates] - orig[orig_coordinates - 1]).to!double / (
-                    next_coordinates - prev_coordinates);
+                next_coordinates - prev_coordinates);
 
             immutable double value = orig[orig_coordinates - 1].to!double + (
-                    slope * (i - prev_coordinates)).to!double;
+                slope * (i - prev_coordinates)).to!double;
 
             stretched[i] = value.to!T;
         }
@@ -140,10 +125,9 @@ T[] stretch_row(T)(T[] orig, size_t new_length) pure
     return stretched;
 }
 
-// TODO later, after I make a function to plot functions 
+// TODO later, after I make a function to plot functions
 T[] cubic_interpolation(T)(T[] input, double[] coordinates_populated_elements)
-        if (isNumeric!T)
-{
+if (isNumeric!T) {
     T[] result;
     return result;
 }

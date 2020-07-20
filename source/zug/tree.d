@@ -1,7 +1,6 @@
 module zug.tree;
 
-unittest
-{
+unittest {
     import std.stdio;
 
     auto node = new Nary!(int).NaryNode();
@@ -18,14 +17,13 @@ unittest
     // writeln(tree.nodes_list);
     // writeln(new_node.tree().nodes_list);
 
-    for(int i = 0; i < 10; i++) {
+    for (int i = 0; i < 10; i++) {
         another.add_child(10234 + i);
     }
     assert(another.children.length == 10);
 }
 
-unittest
-{
+unittest {
     import std.stdio;
 
     auto tree = new Nary!(string).NaryTree();
@@ -53,7 +51,7 @@ unittest
     assert(path == [1, 3]);
 
     auto path_to_third_level = second_node_above_root.child(0).path;
-    assert(path_to_third_level == [1,3,5]);
+    assert(path_to_third_level == [1, 3, 5]);
     auto test_path_is_right = path ~ second_node_above_root.child(0).id;
     assert(test_path_is_right == path_to_third_level);
     auto last_child = second_node_above_root.child(0);
@@ -61,9 +59,8 @@ unittest
     assert("this is root # this is the second child of the root # second level first child" == path_string);
 }
 
-// let's simulate a web site 
-unittest
-{
+// let's simulate a web site
+unittest {
     import std.stdio;
     auto tree = new Nary!(string).NaryTree();
     auto root = tree.create_node(0, "www.example.com");
@@ -82,7 +79,7 @@ unittest
     auto linux = software.add("Linux");
     auto emacs = software.add("Emacs");
     auto vim   = software.add("Vim");
-    
+
     auto mint  = linux.add("Mint");
     auto devuan = linux.add("Devuan");
 
@@ -90,56 +87,45 @@ unittest
 }
 
 
-template Nary(DataType)
-{
-
+template Nary(DataType) {
 
     alias NaryTreeCallback = NaryTree delegate();
 
+    class NaryNode {
 
-    class NaryNode
-    {
-
-    protected:
+        protected:
         size_t _id;
         size_t[] _children;
         DataType _data;
         size_t _parent_id = 0;
-    public:
+        public:
         NaryTreeCallback tree;
 
-        size_t id()
-        {
+        size_t id() {
             return this._id;
         }
 
-        void id(size_t id_value)
-        {
+        void id(size_t id_value) {
             this._id = id_value;
         }
 
-        void children(size_t[] new_children)
-        {
+        void children(size_t[] new_children) {
             this._children = new_children;
         }
 
-        NaryNode[] children()
-        {
+        NaryNode[] children() {
             NaryNode[] children;
-            for (int i = 0; i < this._children.length; i++)
-            {
+            for (int i = 0; i < this._children.length; i++) {
                 children ~= this.tree().node(this._children[i]);
             }
             return children;
         }
 
-        NaryNode child(size_t index)
-        {
+        NaryNode child(size_t index) {
             return this.tree().node(this._children[index]);
         }
 
-        NaryNode add_child(DataType data)
-        {
+        NaryNode add_child(DataType data) {
             auto child = this.tree().create_node(this.id, data);
             this._children ~= child.id;
             return child;
@@ -147,8 +133,7 @@ template Nary(DataType)
 
         alias add = add_child;
 
-        void remove_child(size_t child_id)
-        {
+        void remove_child(size_t child_id) {
             import std.array;
             import std.algorithm;
 
@@ -156,110 +141,91 @@ template Nary(DataType)
             remove(this._children, child_id);
         }
 
-        void parent(size_t new_parent_id)
-        {
+        void parent(size_t new_parent_id) {
             this._parent_id = new_parent_id;
         }
 
-        NaryNode parent()
-        {
-            if (this._parent_id != 0)
-            {
+        NaryNode parent() {
+            if (this._parent_id != 0) {
                 return this.tree().node(this._parent_id);
             }
             return null;
         }
 
-        DataType data()
-        {
+        DataType data() {
             return this._data;
         }
 
-        void data(DataType new_data)
-        {
+        void data(DataType new_data) {
             this._data = new_data;
         }
 
-        size_t[] path()
-        {
+        size_t[] path() {
             import std.stdio;
 
             if (this.parent is null) {
-                return [ this.id ];
-            }
-            else {
+                return [this.id];
+            } else {
                 auto result = this.parent.path();
                 result ~= this.id;
                 return result;
             }
         }
 
-        string path_to_string(string separator)
-        {
-            import std.conv: to;
+        string path_to_string(string separator) {
+            import std.conv : to;
             string result;
             foreach (size_t item; this.path) {
                 auto current_node = this.tree().node(item);
-                result ~= 
-                    ( current_node.parent is null ? "" : separator ) 
-                    ~ current_node.data().to!string;
+                result ~=
+                (current_node.parent is null ? "" : separator)
+                ~current_node.data().to!string;
             }
             return result;
         }
 
     }
 
-    class NaryTree
-    {
+    class NaryTree {
 
         size_t root_id; // 0 means no root or "don't know"
         size_t last_node_id; // sequence for node ids
         NaryNode[size_t] nodes_list;
 
-        NaryNode root()
-        {
-            if (this.root_id == 0)
-            {
+        NaryNode root() {
+            if (this.root_id == 0) {
                 return null;
             }
 
             return this.nodes_list[this.root_id];
         }
 
-        size_t next_node_id()
-        {
+        size_t next_node_id() {
             this.last_node_id++;
             return this.last_node_id;
         }
 
-        void root(NaryNode node)
-        {
-            if (node.id == 0)
-            {
+        void root(NaryNode node) {
+            if (node.id == 0) {
                 node.id = this.next_node_id;
             }
             this.root_id = node.id;
             this.nodes_list[node.id] = node;
         }
 
-        NaryNode create_node(size_t parent_id, DataType data)
-        {
+        NaryNode create_node(size_t parent_id, DataType data) {
             auto node = new NaryNode();
             node.parent(parent_id);
             node.data(data);
-            if (this.last_node_id == 0)
-            {
-                if (parent_id != 0)
-                {
+            if (this.last_node_id == 0) {
+                if (parent_id != 0) {
                     throw new Error("This tree has no root, cannot sent a parent");
                 }
 
                 node.id(1);
                 this.root(node);
                 this.last_node_id = node.id;
-            }
-            else
-            {
+            } else {
                 node.id = this.last_node_id + 1;
                 node.parent(parent_id);
                 this.last_node_id += 1;
@@ -269,13 +235,11 @@ template Nary(DataType)
             return node;
         }
 
-        NaryNode node(size_t node_id)
-        {
+        NaryNode node(size_t node_id) {
             return this.nodes_list[node_id];
         }
 
-        void remove_node(size_t node_id)
-        {
+        void remove_node(size_t node_id) {
             this.nodes_list.remove(node_id);
         }
     }

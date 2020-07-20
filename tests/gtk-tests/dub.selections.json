@@ -4,6 +4,6 @@
 		"arsd-official": "4.4.1",
 		"gtk-d": "3.9.0",
 		"imageformats": "7.0.2",
-		"zug-data": "~master"
+		"zug-data": {"path":"../../"}
 	}
 }

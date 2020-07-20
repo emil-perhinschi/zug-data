@@ -6,7 +6,7 @@
 	"dependencies": {
 		"arsd-official:image_files": "~>4.4.1",
 		"gtk-d": "~>3.9.0",
-		"zug-data": ">=0.0.0"
+		"zug-data": { "path" : "../../"}
 	},
 	"description": "gtk tests",
 	"license": "proprietary",

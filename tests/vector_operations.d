@@ -1,7 +1,6 @@
 module tests.vector_operations;
 
-void main() 
-{
+void main() {
     test_loop();
     test_vector();
     test_dynamic_array();

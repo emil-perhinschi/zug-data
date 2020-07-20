@@ -1,4 +1,4 @@
-#!/usr/bin/env dub
+#! /usr/bin/env dub
 /+dub.json: { "dependencies": { "zug-tap": "*", "zug-data": { "path": "../" }  } } +/
 
 void main() {
@@ -11,21 +11,21 @@ void main() {
     auto tap = Tap("array_utils.d");
     tap.verbose(true);
     tap.plan(18);
-    
+
     {
         uint seed = 42;
-        auto result = random_array!int(10, 0, 15, seed);
+        auto result = random_array!int (10, 0, 15, seed);
 
         tap.ok(result[0] == 12);
         tap.ok(result[1] == 2);
 
-        auto result_float = random_array!float(10, 0, 15, seed);
+        auto result_float = random_array!float (10, 0, 15, seed);
         // TODO figure out how to check floats, this does not work
         // writeln(result_float);
-        // assert(result_float[0] == 5.6181 ); 
+        // assert(result_float[0] == 5.6181 );
 
         size_t how_big = 64;
-        auto orig = Matrix!int(random_array!int(how_big, 0, 255, seed), 8);
+        auto orig = Matrix!int (random_array!int (how_big, 0, 255, seed), 8);
 
         // should look like this
         //      0    1    2    3    4    5    6    7

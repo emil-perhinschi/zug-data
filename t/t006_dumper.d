@@ -1,12 +1,11 @@
-#!/usr/bin/env dub
+#! /usr/bin/env dub
 /+dub.json: { "dependencies": { "zug-tap": "*", "zug-data": { "path": "../" }  } } +/
 
 module t.dumper;
 
-void main()
-{
+void main() {
     import zug.tap;
-    import zug.dumper: dumper;
+    import zug.dumper : dumper;
 
     auto tap = Tap("dumper.d");
     tap.verbose(true);
@@ -29,11 +28,10 @@ void main()
 }
 
 
-void test1() 
-{
+void test1() {
     import std.json;
-    import std.stdio: writeln;
-    import zug.dumper: dumper;
+    import std.stdio : writeln;
+    import zug.dumper : dumper;
 
     struct Test {
         int i = 777;
