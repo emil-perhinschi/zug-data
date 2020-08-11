@@ -246,7 +246,7 @@ do
 *
 * Returns: an array of elements picked, not including the current element
 */
-T[] shaper_circle(T)(Matrix!T orig, size_t x, size_t y, size_t distance) pure
+T[] shaper_circle(T)(Matrix!T orig, size_t x, size_t y, size_t distance) 
 in {
     assert(distance > 0, "distance must be positive");
     assert(distance < orig.height, "window must be smaller than the height of the orignal");

@@ -195,7 +195,7 @@ Matrix!R round_elements(T, R)(Matrix!T orig) if (isNumeric!T && isIntegral!R) {
 }
 
 // TODO finish this
-Matrix!T squeeze(T)(Matrix!T orig, float scale_x, float scale_y) pure
+Matrix!T squeeze(T)(Matrix!T orig, float scale_x, float scale_y)
 if (isNumeric!T) {
     import std.math : round;
 
