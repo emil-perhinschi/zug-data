@@ -299,12 +299,14 @@ bool equal(T)(Matrix!T first, Matrix!T second) {
     return false;
 }
 
+
+// TODO test
 Matrix!T apply_filter(T)(T delegate(T) filter) {
     size_t width = matrix.width;
     auto result = new T[matrix.data_length];
     for (size_t i = 0; i < matrix.data_length; i++) {
         auto old = matrix.get(i);
-        result[i] = old.to_average!(T, ubyte)();
+        result[i] = old.filter!(T, ubyte)();
     }
     return Matrix!T(result, matrix.width);
 }

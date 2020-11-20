@@ -10,7 +10,7 @@ void main() {
 
     auto tap = Tap("array_utils.d");
     tap.verbose(true);
-    tap.plan(37);
+    tap.plan(39);
 
     {
         import zug.matrix.generic.operations : equal;
@@ -176,11 +176,11 @@ void main() {
         auto orig = Matrix!float ([1.1, 100.1, 50.1], 3);
         immutable float normal_min = 0.0;
         immutable float normal_max = 16.0;
-        auto result = orig.normalize!float (normal_min, normal_max);
+        auto result = orig.normalize(normal_min, normal_max);
 
-        tap.ok(result.get(0) == 0);
+        tap.ok(result.get(0) ==  0);
         tap.ok(result.get(1) == 16);
-        // tap.ok(result[2] ==  7.91919); // this fails for some reason , probably float weiredness ? TODO: investigate further
+        tap.ok(result.get(2) ==  7); // this fails for some reason , probably float weiredness ? TODO: investigate further
     }
 
     /// normalize!double
@@ -188,11 +188,10 @@ void main() {
         auto orig = Matrix!double ([0, 255, 125], 3);
         immutable double normal_min = 0;
         immutable double normal_max = 16;
-        auto result = orig.normalize!double (normal_min, normal_max);
-
-        tap.ok(result.get(0) == 0);
-        tap.ok(result.get(1) == 16);
-        tap.ok(result.get(2) == 7);
+        auto result = orig.normalize(normal_min, normal_max);
+        tap.ok(result.get(0) ==  0, "normalize!double");
+        tap.ok(result.get(1) == 16, "normalize!double");
+        tap.ok(result.get(2) ==  7, "normalize!double");
     }
 
     /// normalize!float
@@ -200,11 +199,11 @@ void main() {
         auto orig = Matrix!float ([1.1, 100.1, 50.1], 3);
         immutable float normal_min = 0.0;
         immutable float normal_max = 16.0;
-        auto result = orig.normalize_vector_operation!float (normal_min, normal_max);
+        auto result = orig.normalize(normal_min, normal_max);
         dbg(result, "normalized using vector operations");
-        tap.ok(result.get(0) == 0);
-        tap.ok(result.get(1) == 16);
-        // tap.ok(result[2] ==  7.91919); // this fails for some reason , probably float weiredness ? TODO: investigate further
+        tap.ok(result.get(0) ==  0, "normalize_float");
+        tap.ok(result.get(1) == 16, "normalize_float");
+        tap.ok(result.get(2) ==  7, "normalize_float");
     }
 
     /// normalize_value
@@ -216,7 +215,7 @@ void main() {
         immutable int normal_max = 255;
         immutable int result = normalize_value!(int, int)(orig,
                 actual_min_value, actual_max_value, normal_min, normal_max);
-        tap.ok(result == 63);
+        tap.ok(result == 63, "normalize_value");
     }
 
     tap.done_testing();

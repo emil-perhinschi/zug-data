@@ -324,7 +324,8 @@ do
 // TODO determinant of matrix larger than 2x2
 
 ///
-Matrix!int normalize(T)(Matrix!T orig, T normal_min, T normal_max) pure
+Matrix!int 
+normalize_using_map_to_iterate(T)(Matrix!T orig, T normal_min, T normal_max) pure
 if (isNumeric!T) {
     import std.array : array;
     import std.algorithm : map;
@@ -338,25 +339,31 @@ if (isNumeric!T) {
 }
 
 // TODO: need to benchmark this, and if it works better drop the other one
-Matrix!T normalize_vector_operation(T)(Matrix!T orig, T normal_min, T normal_max) pure
+Matrix!int 
+normalize(T)(Matrix!T orig, T normal_min, T normal_max) pure
 if (isNumeric!T) {
     import std.array : array;
     import std.algorithm : map;
+    import std.conv: to;
 
     immutable auto actual_min_value = orig.min;
     immutable auto actual_max_value = orig.max;
 
     T[] new_data = new T[orig.data_length];
-    auto old_data = orig.data;
-    new_data[] = (normal_min + (old_data[] - actual_min_value) * (normal_max - normal_min) / (actual_max_value - actual_min_value));
+    T[] old_data = orig.data;
+    new_data[] = 
+        (normal_min + (old_data[] - actual_min_value) 
+        * (normal_max - normal_min) 
+        / (actual_max_value - actual_min_value));
 
-    return Matrix!T(new_data, orig.width);
+    int[] converted = new_data.to!(int[]);
+    return Matrix!int(converted, orig.width);
 }
 
 
 /// http://mathforum.org/library/drmath/view/60433.html 1 + (x-A)*(10-1)/(B-A)
 U normalize_value(T, U)(T item, T actual_min_value, T actual_max_value, T normal_min, T normal_max) pure
-if (isNumeric!T) {
+if (isNumeric!T && isNumeric!U) {
     if (normal_min == normal_max) {
         throw new Error("the normal min and max values are equal");
     }

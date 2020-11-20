@@ -150,18 +150,18 @@ struct Matrix(T) // TODO testing generic matrices (should I call them symbolic m
     /// fill: fill is for adding in missing data if the window is outside the matrix
     /// window_size: makes a square window
     /// TODO: make rectangular windows, maybe switch to window_size_x, window_size_y ?
-    Matrix!T window(T)(Offset offset, size_t window_size, T delegate(size_t, size_t) fill)
+    Matrix!T window(T)(Offset offset, size_t width, size_t height, T delegate(size_t, size_t) fill)
     if (isNumeric!T) {
         import std.range : chunks, join;
 
         immutable auto offset_x_orig = offset.x;
 
         auto chunked = this.data.chunks(this.width);
-        T[][] result = new T[][] (window_size, window_size);
+        T[][] result = new T[][] (width, height);
 
-        for (int y = 0; y < window_size; y++) {
+        for (int y = 0; y < height; y++) {
             offset.x = offset_x_orig;
-            for (int x = 0; x < window_size; x++) {
+            for (int x = 0; x < width; x++) {
                 if (offset.x < 0 || offset.y < 0 || offset.x > this.width - 1
                     || offset.y > this.height - 1) {
                     result[y][x] = fill(offset.x, offset.y);
@@ -172,7 +172,7 @@ struct Matrix(T) // TODO testing generic matrices (should I call them symbolic m
             }
             offset.y++;
         }
-        return Matrix!T(result.join(), window_size);
+        return Matrix!T(result.join(), width);
     }
 
     Matrix!T copy() {
@@ -218,7 +218,6 @@ Matrix!T scale_bilinear(T)(
         auto old_value = orig.get(old_x, old_y);
         result.set(new_x, new_y, old_value);
     }
-
 
     return result;
 }

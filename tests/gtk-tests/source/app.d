@@ -13,6 +13,7 @@ import gtk.Image;
 
 import zug.matrix;
 import zug.dumper;
+import zug.pixmap_util;
 
 void main(string[] args) {
     import std.conv : to;
@@ -79,43 +80,6 @@ void main(string[] args) {
     Main.run();
 }
 
-ulong difference(T)(Matrix!(DataPoint!T)left, Matrix!(DataPoint!T)right) {
-    import std.conv : to;
-    import std.math : abs;
-
-    assert(
-            (
-                left.width == right.width
-                && left.height == right.height
-            ),
-            "matrices must have the same size");
-
-    long result = 0;
-    for (size_t i = 0; i < left.data_length; i++) {
-        // using greyscale values
-        long grey_left = left.get(i).to_grayscale.red.to!long;
-        long grey_right = right.get(i).to_grayscale.red.to!long;
-        result += (grey_left - grey_right).abs();
-    }
-
-    return result;
-}
-
-
-Pixbuf to_pixbuf(Matrix!(DataPoint!ubyte)matrix) {
-    import std.conv : to;
-
-    return new Pixbuf(
-            matrix.data_matrix_to_pixmap,
-            GdkColorspace.RGB,
-            true, // has alpha
-            8, // color depth
-            matrix.width.to!int, matrix.height.to!int,
-            (matrix.width * 4).to!int, // rowstride: how many bytes is the length of a row of RGBA pixels
-            null, null // cleanup functions
-    );
-}
-
 // Image left = read_image_grayscaled("tests/bla1.bmp");
 // Image right = read_image_grayscaled("tests/bla2.bmp");
 Image read_image_grayscaled(string file_path) {
@@ -166,38 +130,8 @@ Image read_image_averaged(string file_path) {
     return new Image(pixbuf);
 }
 
-
-struct DataPoint(T) {
-    private:
-    T red;
-    T green;
-    T blue;
-    T alpha;
-
-    public:
-    T[4] to_array() {
-        return [this.red, this.green, this.blue, this.alpha];
-    }
-}
-
-DataPoint!T to_average(T)(DataPoint!T point) {
-    import std.algorithm.iteration : mean;
-
-    T average = (point.red + point.green + point.blue) / 3;
-    return DataPoint!T(average, average, average, point.alpha);
-}
-
-DataPoint!ubyte to_grayscale(DataPoint!ubyte orig) {
-    import std.conv : to;
-
-    float greyscaled = 0.2989 * orig.red.to!float + 0.5870 * orig.green.to!float + 0.1140 * orig.blue.to!float;
-    ubyte computed = greyscaled.to!ubyte;
-    return DataPoint!ubyte (computed, computed, computed, orig.alpha);
-}
-
-
 Matrix!(DataPoint!ubyte)read_bmp(string file_path) {
-    import arsd.bmp;
+    import arsd.bmp: readBmp;
     import zug.matrix;
     import arsd.color;
 
@@ -216,42 +150,23 @@ Matrix!(DataPoint!ubyte)read_bmp(string file_path) {
         auto point = DataPoint!ubyte (data[i * 4], data[i * 4 + 1], data[i * 4 + 2], data[i * 4 + 3]);
         matrix.set(i, point);
     }
-    writeln(matrix.height, " ", matrix.width, " ", matrix.data_length);
+    debug writeln(matrix.height, " ", matrix.width, " ", matrix.data_length);
     // dbg(matrix);
     return matrix;
 }
 
-char[] data_matrix_to_pixmap(P)(Matrix!P matrix) {
+
+Pixbuf to_pixbuf(Matrix!(DataPoint!ubyte) matrix) {
     import std.conv : to;
 
-    char[] result;
-    foreach (P point; matrix.data) {
-        result ~= cast(char[]) point.to_array();
-    }
-
-    return result;
-}
-
-
-Matrix!T to_grayscale_values(T)(Matrix!T matrix) {
-
-    size_t width = matrix.width;
-    T[] result = new T[matrix.data_length];
-    for (size_t i = 0; i < matrix.data_length; i++) {
-        auto old = matrix.get(i);
-        result[i] = old.to_grayscale();
-    }
-    return Matrix!T(result, matrix.width);
-}
-
-Matrix!T to_average_values(T)(Matrix!T matrix) {
-
-    size_t width = matrix.width;
-    auto result = new T[matrix.data_length];
-    for (size_t i = 0; i < matrix.data_length; i++) {
-        auto old = matrix.get(i);
-        result[i] = old.to_average!(ubyte)();
-    }
-    return Matrix!T(result, matrix.width);
+    return new Pixbuf(
+            matrix.data_matrix_to_pixmap,
+            GdkColorspace.RGB,
+            true, // has alpha
+            8, // color depth
+            matrix.width.to!int, matrix.height.to!int,
+            (matrix.width * 4).to!int, // rowstride: how many bytes is the length of a row of RGBA pixels
+            null, null // cleanup functions
+    );
 }
 

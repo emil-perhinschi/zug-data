@@ -18,7 +18,7 @@ void main() {
     auto got_data = cartesian_matrix.data();
     tap.ok(cartesian_matrix.get(0, 0) == cartesian_matrix.data.get(20, 20));
 
-    auto viewport = cartesian_matrix.window(Offset(5, 5), 5);
+    auto viewport = cartesian_matrix.window(Offset(5, 5), 5, 5);
     dbg(viewport, "cartesian viewport");
     auto viewport_corner = cartesian_matrix.get(5, 5);
     tap.ok(viewport.get(0, 0) == cartesian_matrix.get(5, 5));

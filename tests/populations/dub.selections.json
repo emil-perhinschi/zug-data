@@ -2,20 +2,19 @@
 	"fileVersion": 1,
 	"versions": {
 		"arsd-official": "2.2.1",
-		"botan": "1.12.10",
+		"botan": "1.12.18",
 		"botan-math": "1.0.3",
-		"diet-ng": "1.6.0",
-		"eventcore": "0.8.48",
-		"libasync": "0.8.4",
-		"libevent": "2.0.2+2.0.16",
-		"memutils": "0.4.13",
+		"diet-ng": "1.7.4",
+		"eventcore": "0.9.10",
+		"libasync": "0.8.6",
+		"memutils": "1.0.4",
 		"mir-linux-kernel": "1.0.1",
-		"mustache-d": "0.1.3",
+		"mustache-d": "0.1.5",
 		"openssl": "1.1.6+1.0.1g",
 		"stdx-allocator": "2.77.5",
-		"taggedalgebraic": "0.11.6",
-		"vibe-core": "1.7.0",
+		"taggedalgebraic": "0.11.18",
+		"vibe-core": "1.11.0",
 		"vibe-d": "~master",
-		"zug-data": "~master"
+		"zug-data": {"path":"../../"}
 	}
 }
