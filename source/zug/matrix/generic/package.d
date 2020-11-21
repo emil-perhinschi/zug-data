@@ -7,6 +7,8 @@ import std.conv : to;
 
 import zug.matrix;
 
+debug import std.stdio: writeln;
+
 version (unittest) {
     import std.stdio : writeln;
 }
@@ -16,14 +18,6 @@ struct Offset {
     size_t x;
     size_t y;
 }
-
-// TODO: functions which give info about the matrix or modify the matrix should stay in the class as methods
-// TODO: functions which create new stuff based on the matrix should stay out and be called via UFCS
-
-/**
- *
- *
- */
 
 struct Matrix(T) // TODO testing generic matrices (should I call them symbolic matrices ? )
 // if (isNumeric!T)
@@ -148,30 +142,26 @@ struct Matrix(T) // TODO testing generic matrices (should I call them symbolic m
     }
 
     /// fill: fill is for adding in missing data if the window is outside the matrix
-    /// window_size: makes a square window
-    /// TODO: make rectangular windows, maybe switch to window_size_x, window_size_y ?
     Matrix!T window(T)(Offset offset, size_t width, size_t height, T delegate(size_t, size_t) fill)
     if (isNumeric!T) {
-        import std.range : chunks, join;
-
+        import std.array: join;
+        writeln(offset);
         immutable auto offset_x_orig = offset.x;
-
-        auto chunked = this.data.chunks(this.width);
-        T[][] result = new T[][] (width, height);
-
-        for (int y = 0; y < height; y++) {
-            offset.x = offset_x_orig;
-            for (int x = 0; x < width; x++) {
-                if (offset.x < 0 || offset.y < 0 || offset.x > this.width - 1
-                    || offset.y > this.height - 1) {
-                    result[y][x] = fill(offset.x, offset.y);
+        T[][] result;
+        for (size_t y = offset.y; y < offset.y + height; y++) {
+            T[] row;
+            for (size_t x = offset.x; x < offset.x + width; x++) {
+                if (x < 0 || y < 0 
+                    || x > this.width - 1 || y > this.height - 1
+                ) {
+                    row ~= fill(x, y);
                 } else {
-                    result[y][x] = chunked[offset.y][offset.x];
+                    row ~= this.get(x,y);
                 }
-                offset.x++;
             }
-            offset.y++;
+            result ~= row;
         }
+        writeln(result);
         return Matrix!T(result.join(), width);
     }
 

@@ -97,11 +97,11 @@ void main() {
         // dfmt on
 
         Matrix!float orig = Matrix!float (data, 7);
-        auto r1 = orig.window!float (Offset(-3, -3), 4, 4, delegate(size_t x, size_t y) => 0);
+        auto r1 = orig.window!float(Offset(0, 0), 4, 4, delegate(size_t x, size_t y) => 0);
         debug dbg(r1, "Matrix.window");
-        debug dbg(orig.window!float (Offset(-2, -2), 4, 4, delegate(size_t x,
+        debug dbg(orig.window!float (Offset(0, 0), 4, 4, delegate(size_t x,
             size_t y) => 0), "Matrix.window");
-        debug dbg(orig.window!float (Offset(-1, -1), 4, 4, delegate(size_t x,
+        debug dbg(orig.window!float (Offset(0, 0), 4, 4, delegate(size_t x,
             size_t y) => 0), "Matrix.window");
         debug dbg(orig.window!float (Offset(0, 0), 4, 4, delegate(size_t x,
             size_t y) => 0), "Matrix.window");

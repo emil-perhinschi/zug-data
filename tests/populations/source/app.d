@@ -110,10 +110,10 @@ int[][] build_random_map_shaper_square(size_t height, size_t width, int seed) {
 }
 
 int[][] build_random_map_shaper_circle(size_t height, size_t width, int seed) {
-    auto data = random_array!int (16, 0, 15, seed);
-    auto random_mask = Matrix!int (random_array!int (1600, 0, 4, seed), 40);
+    auto data = random_array!int(16, 0, 15, seed);
+    auto random_mask = Matrix!int(random_array!int (1600, 0, 4, seed), 40);
     size_t window_size = 3;
-    return Matrix!int (data, 4).stretch_bilinear(10, 10).add(random_mask).moving_average!(int,
+    return Matrix!int(data, 4).stretch_bilinear(10, 10).add(random_mask).moving_average!(int,
         int)(window_size, &shaper_circle!int,
             &moving_average_simple_calculator!(int, int)).to_2d_array();
 }

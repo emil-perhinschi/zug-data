@@ -1,5 +1,11 @@
 module zug.matrix.cartesian;
 import zug.matrix;
+debug import std.stdio: writeln;
+
+struct CartesianCoordinates {
+    long x;
+    long y;
+}
 
 struct CartesianMatrix(T) {
     private Matrix!T matrix;
@@ -29,17 +35,14 @@ struct CartesianMatrix(T) {
         this.center = Offset(center_x, center_y);
     }
 
-    // TODO adjust for cartesian coordinates
-    // Matrix!T window(T)(Offset offset, size_t window_size,  T delegate(size_t, size_t) fill)
-    //         if (isNumeric!T)
-    /// TODO: allow for rectangular windows, will need to change the matrix.window function too
-    Matrix!T window(Offset offset, size_t width, size_t height) {
-        assert(
-                (offset.x <= this.matrix.width - this.center.x)
-                && (offset.y < this.matrix.height - this.center.y));
-
+    Matrix!T window(CartesianCoordinates offset, size_t width, size_t height) {
+        // TODO fix this to check coordinates not offset from the top right corner
+        // assert(
+        //         (offset.x <= this.matrix.width - this.center.x)
+        //         && (offset.y < this.matrix.height - this.center.y));
+        writeln("in window: ", this.center, offset);
         Offset matrix_offset = Offset(this.center.x + offset.x, this.center.y + offset.y);
-
+        writeln(" in window new offset is: ", matrix_offset);
         return this.data.window(matrix_offset, width, height, delegate(size_t x, size_t y) => 0);
     }
 
