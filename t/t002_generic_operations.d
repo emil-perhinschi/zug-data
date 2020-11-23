@@ -8,7 +8,7 @@ void main() {
     import zug.tap;
     import zug.matrix;
 
-    auto tap = Tap("array_utils.d");
+    auto tap = Tap("t002_generic_operations.d");
     tap.verbose(true);
     tap.plan(62);
     {

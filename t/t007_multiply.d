@@ -7,12 +7,12 @@ void main() {
         import zug.matrix;
         import zug.tap;
 
-        auto tap = Tap("array_utils.d 1");
+        auto tap = Tap("t007_multiply.d");
         tap.verbose(true);
 
         auto first = Matrix!int ([1, 2, 3, 4, 5, 6], 3);
         auto second = Matrix!int ([7, 8, 9, 10, 11, 12], 2);
-        dbg(first, "xxxxx multiplied first");
+        dbg(first, "multiplied first");
         dbg(second, "multiplied second");
         auto result = multiply!int (first, second);
         dbg(result, "multiplied result");

@@ -6,7 +6,7 @@ void main() {
     import zug.tap;
     import zug.matrix;
 
-    auto tap = Tap("array_utils.d");
+    auto tap = Tap("generic_class_item.d");
     tap.verbose(true);
 
     auto orig = Matrix!TestElement(3, 3);
