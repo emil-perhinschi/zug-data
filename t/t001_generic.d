@@ -1,16 +1,15 @@
 #! /usr/bin/env dub
-/+dub.json: { "dependencies": { "zug-tap": "0.1.1", "zug-data": { "path": "../" }  } } +/
+/+ dub.json: { "dependencies": { "zug-tap": "*", "zug-data": { "path": "../" }  } } +/
 
 void main() {
     import std.range : take;
     import std.random : Random, uniform;
-
+    
     import zug.tap;
     import zug.matrix;
 
     auto tap = Tap("t001_generic.d");
     tap.verbose(true);
-    tap.plan(17);
 
     /// get
     {
@@ -135,5 +134,7 @@ void main() {
         tap.ok(orig.get(2, 3) == 11, "get 2,3");
     }
 
-    tap.done_testing();
+    // tap.done_testing();
+    import std.stdio: writeln;
+    tap.report();
 }
