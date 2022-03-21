@@ -1,4 +1,4 @@
-#! /usr/bin/env dub
+#!/usr/bin/env dub
 /+ dub.json: { "dependencies": { "zug-tap": "*", "zug-data": { "path": "../" }  } } +/
 
 void main() {
@@ -25,7 +25,6 @@ void main() {
         dbg(orig, "Matrix 3x4 orig, testing coordinates");
         auto coord = orig.homogenous_coordinates!size_t ();
         dbg(coord, "homogenous coordinates");
-
     }
 
     /// coordinates
@@ -134,7 +133,7 @@ void main() {
         tap.ok(orig.get(2, 3) == 11, "get 2,3");
     }
 
-    // tap.done_testing();
-    import std.stdio: writeln;
+    tap.done_testing();
     tap.report();
+
 }
